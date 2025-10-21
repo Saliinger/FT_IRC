@@ -12,6 +12,13 @@
 class Server
 {
     public:
+        Server();
+        Server(const Server &src);
+        Server operator=(const Server &src);
+        ~Server();
+
+        Server(int port, std::string &password);
+        void run();
     private:
         int _server_fd;
         int _port;
