@@ -5,7 +5,7 @@
 Server::Server() {}
 
 Server::Server(const Server& src) {
-  if (*this != src) {
+  if (this != &src) {
     _server_fd = src._server_fd;
     _port = src._port;
     _password = src._password;
@@ -16,7 +16,7 @@ Server::Server(const Server& src) {
 }
 
 Server Server::operator=(const Server& src) {
-  if (*this != src) {
+  if (this != &src) {
     _server_fd = src._server_fd;
     _port = src._port;
     _password = src._password;
@@ -30,7 +30,10 @@ Server Server::operator=(const Server& src) {
 Server::~Server() {}
 
 // other constructor
-Server::Server(int port, std::string& password) {}
+Server::Server(int port, std::string& password) {
+	_port = port;
+	_password = password;
+}
 
 // runtime
 void Server::run() {
