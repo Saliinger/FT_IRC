@@ -68,7 +68,35 @@ void Server::run()
 	}
 }
 
+void Server::acceptClient()
+{
+	// need to create a new client here
+}
+
+void Server::handleClientMessage(int fd)
+{
+	// handle message from client + possible commands
+}
+
 // handlers
+void Server::processCommand(Client &client, const std::string &line)
+{
+	std::vector < std::string >> tokens = std::split(line);
+
+	std::string cmd = tokens[0];
+
+	if (cmd == "PASS")
+		handlePass(client, tokens);
+	else if (cmd == "NICK")
+		handleNick(client, tokens);
+	else if (cmd == "USER")
+		handleUser(client, tokens);
+	else if (cmd == "JOIN")
+		handleJoin(client, tokens);
+	else if (cmd == "PRIVMSG")
+		handlePrivmsg(client, tokens);
+}
+
 void Server::handlePass(Client &client, const std::vector<std::string> &args)
 {
 	std::cout << "handler called" << std::endl;

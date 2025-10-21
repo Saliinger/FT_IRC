@@ -30,8 +30,11 @@ public:
 
 	// runtime
 	void run();
+	void acceptClient();
+	void handleClientMessage(int fd);
 
 	// handlers
+	void processCommand(Client &client, const std::string &line);
 	void handlePass(Client &client, const std::vector<std::string> &args);
 	void handleNick(Client &client, const std::vector<std::string> &args);
 	void handleUser(Client &client, const std::vector<std::string> &args);
