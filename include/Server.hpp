@@ -1,31 +1,36 @@
 #pragma once
 
-#include <iostream>
-#include <cstring>
-#include <map>
-#include <vector>
 #include <poll.h>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 
-#include "Client.hpp"
 #include "Channel.hpp"
+#include "Client.hpp"
 
-class Server
-{
-    public:
-        Server();
-        Server(const Server &src);
-        Server operator=(const Server &src);
-        ~Server();
+class Client;
+class Channel;
 
-        Server(int port, std::string &password);
-        void run();
-    private:
-        int _server_fd;
-        int _port;
-        std::string _password;
-        std::map<int, Client*> _clients;
-        std::map<std::string, Channel*> channels;
-	    std::vector<pollfd> pollfds;
+class Server {
+ public:
+  // orthodox cannonical form
+  Server();
+  Server(const Server& src);
+  Server operator=(const Server& src);
+  ~Server();
 
+  // other constructor
+  Server(int port, std::string& password);
+
+  // runtime
+  void run();
+
+ private:
+	int _server_fd;
+	int _port;
+	std::string _password;
+	std::map<int, Client*> _clients;
+	std::map<std::string, Channel*> _channels;
+	std::vector<pollfd> _pollfds;
 };
-
