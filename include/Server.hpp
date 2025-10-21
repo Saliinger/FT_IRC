@@ -12,25 +12,26 @@
 class Client;
 class Channel;
 
-class Server {
- public:
-  // orthodox cannonical form
-  Server();
-  Server(const Server& src);
-  Server operator=(const Server& src);
-  ~Server();
+class Server
+{
+public:
+	// orthodox cannonical form
+	Server();
+	Server(const Server &src);
+	Server operator=(const Server &src);
+	~Server();
 
-  // other constructor
-  Server(int port, std::string& password);
+	// other constructor
+	Server(int port, std::string &password);
 
-  // runtime
-  void run();
+	// runtime
+	void run();
 
- private:
+private:
 	int _server_fd;
 	int _port;
 	std::string _password;
-	std::map<int, Client*> _clients;
-	std::map<std::string, Channel*> _channels;
+	std::map<int, Client *> _clients;
+	std::map<std::string, Channel *> _channels;
 	std::vector<pollfd> _pollfds;
 };
