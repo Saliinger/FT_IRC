@@ -1,7 +1,9 @@
 #pragma once
 
-class Client
+class Channel
 {
     public:
     private:
 };
+
+
