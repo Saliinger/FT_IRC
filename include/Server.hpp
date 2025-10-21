@@ -40,10 +40,10 @@ public:
 	void sendToClient(int fd, const std::string &msg);
 
 private:
-	int _server_fd;
-	int _port;
-	std::string _password;
-	std::map<int, Client *> _clients;
-	std::map<std::string, Channel *> _channels;
-	std::vector<pollfd> _pollfds;
+	int _server_fd; // fd of the serv for the calls to connect and send messages
+	int _port; // port to register and listen from
+	std::string _password; // passwd set at initialisation
+	std::map<int, Client *> _clients; // client accepted on the serv
+	std::map<std::string, Channel *> _channels; // channels hosted by the serv
+	std::vector<pollfd> _pollfds; // fds of all client to listen if there's any thing sent from
 };
