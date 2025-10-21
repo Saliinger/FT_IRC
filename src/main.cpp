@@ -11,9 +11,6 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    // av[1] = port
-    // av[2] = password
-
     int port = std::atoi(argv[1]);
     std::string password(argv[2]);
     Server serv(port, password);

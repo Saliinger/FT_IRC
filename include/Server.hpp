@@ -1,10 +1,14 @@
 #pragma once
 
-#include <poll.h>
 #include <iostream>
-#include <map>
 #include <string>
+#include <map>
 #include <vector>
+#include <poll.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <exception>
 
 #include "Channel.hpp"
 #include "Client.hpp"
@@ -26,6 +30,14 @@ public:
 
 	// runtime
 	void run();
+
+	// handlers
+	void handlePass(Client &client, const std::vector<std::string> &args);
+	void handleNick(Client &client, const std::vector<std::string> &args);
+	void handleUser(Client &client, const std::vector<std::string> &args);
+	void handleJoin(Client &client, const std::vector<std::string> &args);
+	void handlePrivmsg(Client &client, const std::vector<std::string> &args);
+	void sendToClient(int fd, const std::string &msg);
 
 private:
 	int _server_fd;
