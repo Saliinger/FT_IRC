@@ -29,4 +29,12 @@ fclean: clean
 
 re: fclean all
 
+# ekrause test zone, delete before validating the project
+ekrause:
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Client.cpp $(SRCDIR)/main.cpp -o ekrause
+
+eclean: fclean
+	rm -f ekrause
+# ///////////////////////////////////////////////////// #
+
 .PHONY: all clean fclean re

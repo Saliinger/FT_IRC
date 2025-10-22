@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "../include/Server.hpp"
+#include "../include/Client.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -25,3 +26,15 @@ int main(int argc, char const *argv[])
     }
     return 0;
 }
+
+// ekrause test
+// int main()
+// {
+//     Client client(10);
+//     client.setNickname("ekrause");
+//     client.setUsername("NoNoro");
+//     std::cout   << client.getNickname() << "\n"
+//                 << client.getUsername() << "\n"
+//                 << client.getFd()
+//                 << std::endl;
+// }
