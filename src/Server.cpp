@@ -44,7 +44,7 @@ Server::Server(int port, std::string &password) : _port(port), _password(passwor
 	setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
 	sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
+	std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(_port);
@@ -65,23 +65,38 @@ void Server::run()
 {
 	while (true)
 	{
+		if (poll(&_pollfds[0], _pollfds.size(), -1) < 0)
+			throw std::runtime_error("Error: poll failed");
+		for (size_t i = 0; i < _pollfds.size(); i++) {
+			if (_pollfds[i].events && POLLIN)
+				acceptClient();
+			else
+				handleClientMessage(_pollfds[i].fd);
+		}
 	}
 }
 
 void Server::acceptClient()
 {
-	// need to create a new client here
+	// open an fd for the new client
+	int client_fd = accept(_server_fd, NULL, NULL);
+	if (client_fd < 0) return;
+	_clients[client_fd] = new Client(client_fd); // ne pas oublier de delete
+	// add client to the pollfds list to check for new messages from
+	_pollfds.push_back((pollfd){client_fd, POLLIN, 0});
+	std::cout << "Client connected: " << client_fd << std::endl;
 }
 
 void Server::handleClientMessage(int fd)
 {
-	// handle message from client + possible commands
+	(void)fd;
+	std::cout << "message handled" << std::endl;
 }
 
 // handlers
 void Server::processCommand(Client &client, const std::string &line)
 {
-	std::vector < std::string >> tokens = std::split(line);
+	std::vector < std::string > tokens = split(line, ' ');
 
 	std::string cmd = tokens[0];
 
@@ -99,30 +114,42 @@ void Server::processCommand(Client &client, const std::string &line)
 
 void Server::handlePass(Client &client, const std::vector<std::string> &args)
 {
+	(void)client;
+	(void)args;
 	std::cout << "handler called" << std::endl;
 }
 
 void Server::handleNick(Client &client, const std::vector<std::string> &args)
 {
+	(void)client;
+	(void)args;
 	std::cout << "handler called" << std::endl;
 }
 
 void Server::handleUser(Client &client, const std::vector<std::string> &args)
 {
+	(void)client;
+	(void)args;
 	std::cout << "handler called" << std::endl;
 }
 
 void Server::handleJoin(Client &client, const std::vector<std::string> &args)
 {
+	(void)client;
+	(void)args;
 	std::cout << "handler called" << std::endl;
 }
 
 void Server::handlePrivmsg(Client &client, const std::vector<std::string> &args)
 {
+	(void)client;
+	(void)args;
 	std::cout << "handler called" << std::endl;
 }
 
 void Server::sendToClient(int fd, const std::string &msg)
 {
+	(void)fd;
+	(void)msg;
 	std::cout << "handler called" << std::endl;
 }
