@@ -9,9 +9,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <exception>
+#include <cstring>
 
 #include "Channel.hpp"
 #include "Client.hpp"
+#include "Utils.hpp"
 
 class Client;
 class Channel;

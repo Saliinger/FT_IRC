@@ -397,7 +397,7 @@ char *inet_ntoa(struct in_addr in);
 
 ```c
 int getaddrinfo(const char *hostname, const char *service,
-                const struct addrinfo *hints, struct addrinfo **res);
+				const struct addrinfo *hints, struct addrinfo **res);
 ```
 
 **Purpose:** Network address and service translation (modern, IPv6-compatible).
@@ -448,7 +448,7 @@ struct hostent *gethostbyname(const char *name);
 
 ```c
 int select(int nfds, fd_set *readfds, fd_set *writefds,
-           fd_set *errorfds, struct timeval *timeout);
+		   fd_set *errorfds, struct timeval *timeout);
 ```
 
 **Purpose:** Monitors multiple file descriptors for I/O readiness.
@@ -468,7 +468,7 @@ fd_set read_fds;
 FD_ZERO(&read_fds);
 FD_SET(server_fd, &read_fds);
 for (each client) {
-    FD_SET(client_fd, &read_fds);
+	FD_SET(client_fd, &read_fds);
 }
 select(max_fd + 1, &read_fds, NULL, NULL, NULL);
 ```
@@ -525,7 +525,7 @@ int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
 ```c
 int kqueue(void);
 int kevent(int kq, const struct kevent *changelist, int nchanges,
-           struct kevent *eventlist, int nevents, const struct timespec *timeout);
+		   struct kevent *eventlist, int nevents, const struct timespec *timeout);
 ```
 
 **Purpose:** BSD/macOS-specific event notification mechanism.
@@ -601,7 +601,7 @@ char *strerror(int errnum);
 
 ```cpp
 if (connect(fd, addr, len) < 0) {
-    std::cerr << "Connection failed: " << strerror(errno) << std::endl;
+	std::cerr << "Connection failed: " << strerror(errno) << std::endl;
 }
 ```
 
@@ -700,8 +700,8 @@ int fstat(int fd, struct stat *buf);
 ```cpp
 struct stat file_info;
 if (fstat(fd, &file_info) == 0) {
-    off_t file_size = file_info.st_size;
-    mode_t permissions = file_info.st_mode;
+	off_t file_size = file_info.st_size;
+	mode_t permissions = file_info.st_mode;
 }
 ```
 
