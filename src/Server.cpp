@@ -87,6 +87,14 @@ void Server::acceptClient()
 	std::cout << "Client connected: " << client_fd << std::endl;
 }
 
+// max buffer[512]
+// recv to receive
+// check for /r/n for end message
+// if exceed need to send an error
+// if recv(fd, buffer,sizeof(buffer), -1, 0) == 0 client disconnected
+// if recv(fd, buffer,sizeof(buffer), -1, 0) == -1 recv error
+// if recv(fd, buffer,sizeof(buffer), -1, 0) > 0 text received
+
 void Server::handleClientMessage(int fd)
 {
 	(void)fd;
