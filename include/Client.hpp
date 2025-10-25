@@ -31,4 +31,5 @@ class Client
         void            authenticate();
         void            joinChannel(Channel* channel);
         void            leaveChannel(Channel* channel);
+        void            listChannels();
 };

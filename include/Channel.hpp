@@ -20,6 +20,7 @@ class Channel
 
 		// Methodes
 		void		addClient(Client* client);
+		void		removeClient(Client* client);
 };
 
 
