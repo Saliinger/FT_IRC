@@ -27,3 +27,6 @@ std::string Channel::getChannelName() const
 // Methodes
 void    Channel::addClient(Client* client)
 { _clientList[client->getFd()] = client; }
+
+void    Channel::removeClient(Client* client)
+{ _clientList.erase(client->getFd()); }

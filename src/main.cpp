@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-//krause test
+//ekrause test
 // int main()
 // {
 //     Client client(10);
@@ -37,6 +37,7 @@ int main(int argc, char const *argv[])
 //     client.setUsername("NoNoro");
 //     Channel channel("test");
 //     client.joinChannel(&channel);
+//     client.leaveChannel(&channel);
 
 //     std::cout   << client.getNickname() << "\n"
 //                 << client.getUsername() << "\n"
