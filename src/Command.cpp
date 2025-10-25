@@ -23,6 +23,7 @@ void Command::handleCommand(Client &client, Channel &channel, std::string &comma
 
 void Command::handlePass(Client &client, const std::vector<std::string> &args)
 {
+    // change the password of a client
     (void)client;
     (void)args;
     std::cout << "handler called" << std::endl;
@@ -30,6 +31,7 @@ void Command::handlePass(Client &client, const std::vector<std::string> &args)
 
 void Command::handleNick(Client &client, const std::vector<std::string> &args)
 {
+    // change the nickname of a client
     (void)client;
     (void)args;
     std::cout << "handler called" << std::endl;
@@ -44,6 +46,7 @@ void Command::handleUser(Client &client, const std::vector<std::string> &args)
 
 void Command::handleJoin(Client &client, const std::vector<std::string> &args)
 {
+    // check if the channel exist if yes check the invites / join settings otherwise create a channel
     (void)client;
     (void)args;
     std::cout << "handler called" << std::endl;
@@ -51,6 +54,7 @@ void Command::handleJoin(Client &client, const std::vector<std::string> &args)
 
 void Command::handlePrivmsg(Client &client, const std::vector<std::string> &args)
 {
+    // used for any message between client -> channel / client -> client
     (void)client;
     (void)args;
     std::cout << "handler called" << std::endl;
