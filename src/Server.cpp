@@ -67,7 +67,8 @@ void Server::run()
 	{
 		if (poll(&_pollfds[0], _pollfds.size(), -1) < 0)
 			throw std::runtime_error("Error: poll failed");
-		for (size_t i = 0; i < _pollfds.size(); i++) {
+		for (size_t i = 0; i < _pollfds.size(); i++)
+		{
 			if (_pollfds[i].fd == _server_fd)
 				acceptClient();
 			else if (_pollfds[i].events && POLLIN)
@@ -76,20 +77,21 @@ void Server::run()
 	}
 }
 
-void Server::sendWelcome(Client &client) {
-    std::string nick = client.getNickname();
-    sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
-    sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
-    sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
-    sendToClient(client.getFd(), ":ft_irc 004 " + nick + " ft_irc 1.0 o o\r\n");
+void Server::sendWelcome(Client &client)
+{
+	std::string nick = client.getNickname();
+	sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
+	sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
+	sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
+	sendToClient(client.getFd(), ":ft_irc 004 " + nick + " ft_irc 1.0 o o\r\n");
 }
-
 
 void Server::acceptClient()
 {
 	// open an fd for the new client
 	int client_fd = accept(_server_fd, NULL, NULL);
-	if (client_fd < 0) return;
+	if (client_fd < 0)
+		return;
 	_clients[client_fd] = new Client(client_fd); // ne pas oublier de delete
 	// add client to the pollfds list to check for new messages from
 	_pollfds.push_back((pollfd){client_fd, POLLIN, 0});
@@ -114,70 +116,18 @@ void Server::handleClientMessage(int fd)
 		std::cout << temp_buffer << std::endl;
 	std::string cmd = temp_buffer;
 	sendToClient(fd, cmd);
-	processCommand(*_clients[fd], cmd);
+	Command::handleCommand(Client, _channels["hello"], cmd);
 	for (size_t i = 0; i < 512; i++)
 		temp_buffer[i] = 0;
 }
 
-// handlers
-void Server::processCommand(Client &client, const std::string &line)
+void Server::sendToClient(int fd, const std::string &msg)
 {
-	std::vector < std::string > tokens = split(line, ' ');
-
-	std::string cmd = tokens[0];
-
-	if (cmd == "PASS")
-		handlePass(client, tokens);
-	else if (cmd == "NICK")
-		handleNick(client, tokens);
-	else if (cmd == "USER")
-		handleUser(client, tokens);
-	else if (cmd == "JOIN")
-		handleJoin(client, tokens);
-	else if (cmd == "PRIVMSG")
-		handlePrivmsg(client, tokens);
-}
-
-void Server::handlePass(Client &client, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)args;
-	std::cout << "handler called" << std::endl;
-}
-
-void Server::handleNick(Client &client, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)args;
-	std::cout << "handler called" << std::endl;
-}
-
-void Server::handleUser(Client &client, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)args;
-	std::cout << "handler called" << std::endl;
-}
-
-void Server::handleJoin(Client &client, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)args;
-	std::cout << "handler called" << std::endl;
-}
-
-void Server::handlePrivmsg(Client &client, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)args;
-	std::cout << "handler called" << std::endl;
-}
-
-void Server::sendToClient(int fd, const std::string &msg) {
-    ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
-    if (bytes == -1) {
-        perror("send failed");
-    }
+	ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
+	if (bytes == -1)
+	{
+		perror("send failed");
+	}
 }
 
 // when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat

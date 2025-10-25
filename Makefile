@@ -8,6 +8,7 @@ LIBDIR = lib
 
 SOURCES = $(SRCDIR)/main.cpp \
 			$(SRCDIR)/Utils.cpp \
+			$(SRCDIR)/Command.cpp \
 			$(SRCDIR)/Channel.cpp \
 			$(SRCDIR)/Client.cpp \
 			$(SRCDIR)/Server.cpp
