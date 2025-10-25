@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 #include <poll.h>
-#include <netinet/in.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <exception>
@@ -36,7 +35,6 @@ public:
 	void acceptClient();
 	void handleClientMessage(int fd);
 	void sendWelcome(Client &client);
-	void sendToClient(int fd, const std::string &msg);
 
 private:
 	int _server_fd;								// fd of the serv for the calls to connect and send messages

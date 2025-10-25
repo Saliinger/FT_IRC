@@ -88,15 +88,12 @@ void Server::sendWelcome(Client &client)
 
 void Server::acceptClient()
 {
-	// open an fd for the new client
 	int client_fd = accept(_server_fd, NULL, NULL);
 	if (client_fd < 0)
 		return;
-	_clients[client_fd] = new Client(client_fd); // ne pas oublier de delete
-	// add client to the pollfds list to check for new messages from
+	_clients[client_fd] = new Client(client_fd);
 	_pollfds.push_back((pollfd){client_fd, POLLIN, 0});
 	sendWelcome(*_clients[client_fd]);
-	std::cout << "Client connected: " << client_fd << std::endl;
 }
 
 // max buffer[512]
@@ -116,18 +113,9 @@ void Server::handleClientMessage(int fd)
 		std::cout << temp_buffer << std::endl;
 	std::string cmd = temp_buffer;
 	sendToClient(fd, cmd);
-	Command::handleCommand(Client, _channels["hello"], cmd);
+	Command::handleCommand(*_clients[fd], *_channels["hello"], cmd);
 	for (size_t i = 0; i < 512; i++)
 		temp_buffer[i] = 0;
-}
-
-void Server::sendToClient(int fd, const std::string &msg)
-{
-	ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
-	if (bytes == -1)
-	{
-		perror("send failed");
-	}
 }
 
 // when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat
