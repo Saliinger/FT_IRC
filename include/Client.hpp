@@ -3,24 +3,32 @@
 #include <string>
 #include <map>
 
+class Channel;
+
 class Client
 {
     private:
-        int                             _fd;
-        std::string                     _nickname;
-        std::string                     _username;
-        enum                            Role { OPERATOR, REGULAR };
-        std::map<std::string, Role>     _channels;
+        int                                 _fd;
+        bool                                _isAuth;
+        std::string                         _nickname;
+        std::string                         _username;
+        std::map<std::string, Channel *>    _channelList;
 
     public:
         Client(int fd);
         ~Client();
 
         // Getters & Setters
-        int             getFd();
-        std::string     getNickname();
-        std::string     getUsername();
+        int             getFd() const;
+        bool            isAuthenticated() const;
+        std::string     getNickname() const;
+        std::string     getUsername() const;
 
-        void            setNickname(std::string nickname);
-        void            setUsername(std::string username);
+        void            setNickname(const std::string& nickname);
+        void            setUsername(const std::string& username);
+
+        // Methodes
+        void            authenticate();
+        void            joinChannel(Channel* channel);
+        void            leaveChannel(Channel* channel);
 };

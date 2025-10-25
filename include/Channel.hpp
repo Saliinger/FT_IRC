@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Client.hpp>
-#include <list>
 #include <string>
+#include <map>
+
+class Client;
 
 class Channel
 {
@@ -14,8 +15,11 @@ class Channel
 		Channel(std::string channelName);
 		~Channel();
 
+		// Getters & Setters
+		std::string	getChannelName() const;
+
 		// Methodes
-		void	addClient(Client& client);
+		void		addClient(Client* client);
 };
 
 
