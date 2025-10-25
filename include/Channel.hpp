@@ -4,6 +4,9 @@
 #include <map>
 
 class Client;
+#include <map>
+
+class Client;
 
 class Channel
 {
@@ -18,9 +21,11 @@ class Channel
 		// Getters & Setters
 		std::string	getChannelName() const;
 
+		// Getters & Setters
+		std::string	getChannelName() const;
+
 		// Methodes
 		void		addClient(Client* client);
-		void		removeClient(Client* client);
 };
 
 
