@@ -43,3 +43,10 @@ void    Client::joinChannel(Channel* channel)
     _channelList[channel->getChannelName()] = channel;
     channel->addClient(this);
 }
+
+void    Client::leaveChannel(Channel* channel)
+{
+    std::cout << "Client: " << _username << " left channel: " << channel->getChannelName() << std::endl;
+    _channelList.erase(channel->getChannelName());
+    channel->removeClient(this);
+}
