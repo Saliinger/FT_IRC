@@ -6,8 +6,12 @@ void Command::handleCommand(Client &client, Channel &channel, std::string &comma
     std::vector<std::string> tokens = split(command, ' ');
 
     std::string cmd = tokens[0];
+    if (cmd == "JOIN :")
+        return;
 
-    if (cmd == "PASS")
+    if (cmd == "WHOIS")
+        client.setUsername(tokens[1]);
+    else if (cmd == "PASS")
         handlePass(client, tokens);
     else if (cmd == "NICK")
         handleNick(client, tokens);
@@ -32,9 +36,8 @@ void Command::handlePass(Client &client, const std::vector<std::string> &args)
 void Command::handleNick(Client &client, const std::vector<std::string> &args)
 {
     // change the nickname of a client
-    (void)client;
-    (void)args;
-    std::cout << "handler called" << std::endl;
+    client.setNickname(args[1]);
+    std::cout << "new NICK " + client.getNickname() << std::endl;
 }
 
 void Command::handleUser(Client &client, const std::vector<std::string> &args)
@@ -55,7 +58,12 @@ void Command::handleJoin(Client &client, const std::vector<std::string> &args)
 void Command::handlePrivmsg(Client &client, const std::vector<std::string> &args)
 {
     // used for any message between client -> channel / client -> client
+    // PRIVMSG #channel :hello everyone!\r\n
     (void)client;
     (void)args;
     std::cout << "handler called" << std::endl;
 }
+
+// if a message is sent to a channel need to send it to all participant of that channel
+// to get historique need to have std::vector<string> that got all previous message ready to send to a new joining client
+// forward message format <nick>!<user>@<host> PRIVMSG #channel :hello everyone!\r\n

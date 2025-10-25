@@ -45,9 +45,9 @@ Server::Server(int port, std::string &password) : _port(port), _password(passwor
 
 	sockaddr_in addr;
 	std::memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET; // setup for ipv4
+	addr.sin_family = AF_INET;		   // setup for ipv4
 	addr.sin_addr.s_addr = INADDR_ANY; // idk
-	addr.sin_port = htons(_port); // set the port of hour soket
+	addr.sin_port = htons(_port);	   // set the port of hour soket
 
 	if (bind(_server_fd, (sockaddr *)&addr, sizeof(addr)) < 0) // attach socket to ip && port
 		throw std::runtime_error("bind failed");
@@ -106,13 +106,15 @@ void Server::acceptClient()
 
 void Server::handleClientMessage(int fd)
 {
-	// put the message in the buuffer if complete send it to handle command and remove the handled message 
+	// put the message in the buuffer if complete send it to handle command and remove the handled message
 	char temp_buffer[512]; // temp buffer to test stuff
 	int bytes_read = recv(fd, temp_buffer, sizeof(temp_buffer), 0);
 
-	if (bytes_read > 0)
-		std::cout << temp_buffer << std::endl;
+	if (bytes_read < 0)
+		std::cout << "Error: message failed" << std::endl;
+
 	std::string cmd = temp_buffer;
+	std::cout << "msg: " + cmd << std::endl;
 	Command::handleCommand(*_clients[fd], *_channels["hello"], cmd);
 
 	// clear the buffer for test
