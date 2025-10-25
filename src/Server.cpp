@@ -68,13 +68,22 @@ void Server::run()
 		if (poll(&_pollfds[0], _pollfds.size(), -1) < 0)
 			throw std::runtime_error("Error: poll failed");
 		for (size_t i = 0; i < _pollfds.size(); i++) {
-			if (_pollfds[i].events && POLLIN)
+			if (_pollfds[i].fd == _server_fd)
 				acceptClient();
-			else
+			else if (_pollfds[i].events && POLLIN)
 				handleClientMessage(_pollfds[i].fd);
 		}
 	}
 }
+
+void Server::sendWelcome(Client &client) {
+    std::string nick = client.getNickname();
+    sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
+    sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
+    sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
+    sendToClient(client.getFd(), ":ft_irc 004 " + nick + " ft_irc 1.0 o o\r\n");
+}
+
 
 void Server::acceptClient()
 {
@@ -84,6 +93,7 @@ void Server::acceptClient()
 	_clients[client_fd] = new Client(client_fd); // ne pas oublier de delete
 	// add client to the pollfds list to check for new messages from
 	_pollfds.push_back((pollfd){client_fd, POLLIN, 0});
+	sendWelcome(*_clients[client_fd]);
 	std::cout << "Client connected: " << client_fd << std::endl;
 }
 
@@ -97,8 +107,16 @@ void Server::acceptClient()
 
 void Server::handleClientMessage(int fd)
 {
-	(void)fd;
-	std::cout << "message handled" << std::endl;
+	char temp_buffer[512]; // temp buffer to test stuff
+	int bytes_read = recv(fd, temp_buffer, sizeof(temp_buffer), 0);
+
+	if (bytes_read > 0)
+		std::cout << temp_buffer << std::endl;
+	std::string cmd = temp_buffer;
+	sendToClient(fd, cmd);
+	processCommand(*_clients[fd], cmd);
+	for (size_t i = 0; i < 512; i++)
+		temp_buffer[i] = 0;
 }
 
 // handlers
@@ -155,9 +173,11 @@ void Server::handlePrivmsg(Client &client, const std::vector<std::string> &args)
 	std::cout << "handler called" << std::endl;
 }
 
-void Server::sendToClient(int fd, const std::string &msg)
-{
-	(void)fd;
-	(void)msg;
-	std::cout << "handler called" << std::endl;
+void Server::sendToClient(int fd, const std::string &msg) {
+    ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
+    if (bytes == -1) {
+        perror("send failed");
+    }
 }
+
+// when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat

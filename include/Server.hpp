@@ -34,6 +34,7 @@ public:
 	void run();
 	void acceptClient();
 	void handleClientMessage(int fd);
+	void sendWelcome(Client &client);
 
 	// handlers
 	void processCommand(Client &client, const std::string &line);
