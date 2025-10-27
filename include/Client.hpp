@@ -5,16 +5,9 @@
 
 class Channel;
 
-class Channel;
-
 class Client
 {
     private:
-        int                                 _fd;
-        bool                                _isAuth;
-        std::string                         _nickname;
-        std::string                         _username;
-        std::map<std::string, Channel *>    _channelList;
         int                                 _fd;
         bool                                _isAuth;
         std::string                         _nickname;
@@ -26,10 +19,6 @@ class Client
         ~Client();
 
         // Getters & Setters
-        int             getFd() const;
-        bool            isAuthenticated() const;
-        std::string     getNickname() const;
-        std::string     getUsername() const;
         int             getFd() const;
         bool            isAuthenticated() const;
         std::string     getNickname() const;

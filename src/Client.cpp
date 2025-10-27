@@ -1,30 +1,18 @@
 #include "../include/Client.hpp"
 #include "../include/Channel.hpp"
-#include "../include/Channel.hpp"
 
 #include <iostream>
 #include <string>
 
 // Constructor & Destructor
-// Constructor & Destructor
 Client::Client(int fd)
-    :   _fd(fd),
-        _isAuth(false)
-{ std::cout   << "Client constructor called" << std::endl; }
     :   _fd(fd),
         _isAuth(false)
 { std::cout   << "Client constructor called" << std::endl; }
 
 Client::~Client()
 { std::cout << "Client destructor called" << std::endl; }
-{ std::cout << "Client destructor called" << std::endl; }
 
-// Getters
-int Client::getFd() const
-{ return (_fd); }
-
-bool Client::isAuthenticated() const
-{ return (_isAuth); }
 // Getters
 int Client::getFd() const
 { return (_fd); }
@@ -34,17 +22,10 @@ bool Client::isAuthenticated() const
 
 std::string Client::getNickname() const
 { return (_nickname); }
-std::string Client::getNickname() const
-{ return (_nickname); }
 
 std::string Client::getUsername() const
 { return (_username); }
-std::string Client::getUsername() const
-{ return (_username); }
 
-// Setters
-void    Client::setNickname(const std::string& nickname)
-{ _nickname = nickname; }
 // Setters
 void    Client::setNickname(const std::string& nickname)
 { _nickname = nickname; }

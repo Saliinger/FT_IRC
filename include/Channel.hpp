@@ -4,11 +4,6 @@
 #include <map>
 #include <list>
 
-#include "Utils.hpp"
-
-class Client;
-#include <map>
-
 class Client;
 
 class Channel
@@ -26,9 +21,6 @@ class Channel
 		std::string						getChannelName() const;
 		const std::map<int, Client *>&	getClients() const;
 
-		// Getters & Setters
-		std::string	getChannelName() const;
-
 		// Methodes
 		void		addClient(Client* client);
 		void		removeClient(Client* client);
@@ -39,7 +31,4 @@ class Channel
 		// remove operator
 		// modes
 		// topic
-
-		// alexis's functions
-		void		forwardMessage(int fd, std::string &msg);
 };
