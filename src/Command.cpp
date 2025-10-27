@@ -87,8 +87,11 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> cha
     std::string channelName(args[1]);
     std::string msg(":ft_irc <HELLO>!<HELLO>@<localhost> PRIVMSG #hello :hello everyone!\r\n");
     if (channelName == "#hello")
+        sendToClient(client.getFd(), msg);
         // channels[channelName]->forwardMessage(client.getFd(), msg);
     // send constructed message to the specific channel
+    (void)channels;
+
 }
 
 // if a message is sent to a channel need to send it to all participant of that channel
