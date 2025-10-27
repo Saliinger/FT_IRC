@@ -18,6 +18,6 @@ void sendToClient(int fd, const std::string &msg)
 	ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
 	if (bytes == -1)
 	{
-		perror("send failed");
+		std::cerr << "send failed" << std::endl;
 	}
 }
