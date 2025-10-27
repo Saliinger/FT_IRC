@@ -31,7 +31,10 @@ Server Server::operator=(const Server &src)
 	return *this;
 }
 
-Server::~Server() {}
+Server::~Server() {
+	// delete client / channel
+	// close all fd ( client / server )
+}
 
 // other constructor
 Server::Server(int port, std::string &password) : _port(port), _password(password)
@@ -114,8 +117,8 @@ void Server::handleClientMessage(int fd)
 		std::cout << "Error: message failed" << std::endl;
 
 	std::string cmd = temp_buffer;
-	std::cout << "msg: " + cmd << std::endl;
-	Command::handleCommand(*_clients[fd], *_channels["hello"], cmd);
+	// std::cout << "msg: " + cmd << std::endl;
+	Command::handleCommand(*_clients[fd], _channels, cmd);
 
 	// clear the buffer for test
 	for (size_t i = 0; i < 512; i++)

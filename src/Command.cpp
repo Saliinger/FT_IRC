@@ -1,8 +1,8 @@
 #include "../include/Command.hpp"
 
-void Command::handleCommand(Client &client, Channel &channel, std::string &command)
+void Command::handleCommand(Client &client, std::map<std::string, Channel *> channels, std::string &command)
 {
-    (void)channel;
+    (void)channels;
     std::vector<std::string> tokens = split(command, ' ');
 
     std::string cmd = tokens[0];
@@ -18,9 +18,9 @@ void Command::handleCommand(Client &client, Channel &channel, std::string &comma
     else if (cmd == "USER")
         handleUser(client, tokens);
     else if (cmd == "JOIN")
-        handleJoin(client, tokens);
+        handleJoin(client,channels, tokens);
     else if (cmd == "PRIVMSG")
-        handlePrivmsg(client, tokens);
+        handlePrivmsg(client, channels, tokens);
     else if (cmd == "QUIT")
         std::cout << "leaving" << std::endl; // segv if client leave cause of no handling
 }
@@ -47,21 +47,23 @@ void Command::handleUser(Client &client, const std::vector<std::string> &args)
     std::cout << "handler called" << std::endl;
 }
 
-void Command::handleJoin(Client &client, const std::vector<std::string> &args)
+void Command::handleJoin(Client &client, std::map<std::string, Channel *> channels, const std::vector<std::string> &args)
 {
     // check if the channel exist if yes check the invites / join settings otherwise create a channel
-    (void)client;
-    (void)args;
-    std::cout << "handler called" << std::endl;
+    std::string channelName(args[1]);
+    channels[channelName] = new Channel(channelName);
+
+    std::cout << client.getNickname() + "created: " + channels[channelName]->getChannelName() << std::endl;
 }
 
-void Command::handlePrivmsg(Client &client, const std::vector<std::string> &args)
+void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> channels, const std::vector<std::string> &args)
 {
     // used for any message between client -> channel / client -> client
     // PRIVMSG #channel :hello everyone!\r\n
     (void)client;
-    (void)args;
-    std::cout << "handler called" << std::endl;
+    std::string channelName(args[1]);
+    Channel channel = *channels[channelName];
+    // send constructed message to the specific channel
 }
 
 // if a message is sent to a channel need to send it to all participant of that channel
