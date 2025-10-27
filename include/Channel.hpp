@@ -4,6 +4,8 @@
 #include <map>
 #include <list>
 
+#include "Utils.hpp"
+
 class Client;
 #include <map>
 
@@ -37,4 +39,7 @@ class Channel
 		// remove operator
 		// modes
 		// topic
+
+		// alexis's functions
+		void		forwardMessage(int fd, std::string &msg);
 };
