@@ -12,3 +12,12 @@ std::vector<std::string> split(const std::string &str, char delimiter) {
 
     return tokens;
 }
+
+void sendToClient(int fd, const std::string &msg)
+{
+	ssize_t bytes = send(fd, msg.c_str(), msg.size(), 0);
+	if (bytes == -1)
+	{
+		std::cerr << "send failed" << std::endl;
+	}
+}
