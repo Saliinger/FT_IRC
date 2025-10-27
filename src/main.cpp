@@ -31,15 +31,24 @@ int main(int argc, char const *argv[])
 //ekrause test
 // int main()
 // {
-//     Client client(10);
-//     client.setNickname("ekrause");
-//     client.setUsername("NoNoro");
-//     Channel channel("test");
-//     client.joinChannel(&channel);
-//     client.leaveChannel(&channel);
+//     Client* client = new Client(10);
+//     Channel* channel = new Channel("test");
 
-//     std::cout   << client.getNickname() << "\n"
-//                 << client.getUsername() << "\n"
-//                 << client.getFd()
+//     client->setNickname("ekrause");
+//     client->setUsername("NoNoro");
+//     client->joinChannel(channel);
+//     client->leaveChannel(channel);
+
+//     std::cout   << client->getNickname() << "\n"
+//                 << client->getUsername() << "\n"
+//                 << client->getFd()
 //                 << std::endl;
+
+//     client->joinChannel(channel);
+//     channel->setOperator(client);
+//     std::cout << channel->isOperator(client) << std::endl;
+//     std::cout << channel->removeOperator(client) << std::endl;
+
+//     delete client;
+//     delete channel;
 // }
