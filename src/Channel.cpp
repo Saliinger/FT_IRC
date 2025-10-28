@@ -1,5 +1,6 @@
 #include "../include/Channel.hpp"
 #include "../include/Client.hpp"
+#include "../include/Modes.hpp"
 
 #include <map>
 #include <list>
@@ -21,6 +22,15 @@ std::string Channel::getChannelName() const
 
 const std::map<int, Client *>& Channel::getClients() const
 { return (_clientList); }
+
+const std::map<int, Client *>& Channel::getOperators() const
+{ return (_operatorList); }
+
+bool    Channel::getChannelMode(ChannelModes mode) const
+{ return _modes.getMode(mode); }
+
+void    Channel::setChannelMode(ChannelModes mode, bool b)
+{ _modes.setMode(mode, b); }
 
 // Methodes
 void    Channel::addClient(Client* client)
