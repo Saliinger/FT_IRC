@@ -6,11 +6,12 @@ SRCDIR = src
 INCDIR = include
 LIBDIR = lib
 
-SOURCES = $(SRCDIR)/main.cpp \
+SOURCES =	$(SRCDIR)/main.cpp \
 			$(SRCDIR)/Utils.cpp \
 			$(SRCDIR)/Command.cpp \
 			$(SRCDIR)/Channel.cpp \
 			$(SRCDIR)/Client.cpp \
+			$(SRCDIR)/Modes.cpp \
 			$(SRCDIR)/Server.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)

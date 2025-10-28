@@ -26,11 +26,18 @@ const std::map<int, Client *>& Channel::getClients() const
 const std::map<int, Client *>& Channel::getOperators() const
 { return (_operatorList); }
 
+const std::string&  Channel::getTopic() const
+{ return (_topic); }
+
 bool    Channel::getChannelMode(ChannelModes mode) const
 { return _modes.getMode(mode); }
 
+// Setters
 void    Channel::setChannelMode(ChannelModes mode, bool b)
 { _modes.setMode(mode, b); }
+
+void    Channel::setTopic(const std::string& topic)
+{ _topic = topic; }
 
 // Methodes
 void    Channel::addClient(Client* client)
