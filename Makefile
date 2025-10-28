@@ -7,6 +7,7 @@ INCDIR = include
 LIBDIR = lib
 
 SOURCES = $(SRCDIR)/main.cpp \
+			$(SRCDIR)/Modes.cpp \
 			$(SRCDIR)/Utils.cpp \
 			$(SRCDIR)/Command.cpp \
 			$(SRCDIR)/Channel.cpp \
