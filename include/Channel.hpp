@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Modes.hpp"
+
 #include <string>
 #include <map>
 #include <list>
@@ -12,6 +14,7 @@ class Channel
 		std::string					_channelName;
 		std::map<int, Client *>		_clientList;
 		std::map<int, Client *>		_operatorList;
+		Modes						_modes;
 
 	public:
 		Channel(std::string channelName);
@@ -20,6 +23,9 @@ class Channel
 		// Getters & Setters
 		std::string						getChannelName() const;
 		const std::map<int, Client *>&	getClients() const;
+		const std::map<int, Client *>&	getOperators() const;
+		bool							getChannelMode(ChannelModes mode) const;
+		void							setChannelMode(ChannelModes mode, bool b);
 
 		// Methodes
 		void		addClient(Client* client);
@@ -27,8 +33,5 @@ class Channel
 		bool		setOperator(Client* client);
 		bool		removeOperator(Client* client);
 		bool 		isOperator(Client* client) const;
-		// get operators
-		// remove operator
-		// modes
-		// topic
+		// topic]
 };
