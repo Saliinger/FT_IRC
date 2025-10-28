@@ -12,9 +12,11 @@ class Channel
 {
 	private:
 		std::string					_channelName;
+		std::string					_topic;
 		std::map<int, Client *>		_clientList;
 		std::map<int, Client *>		_operatorList;
 		Modes						_modes;
+
 
 	public:
 		Channel(std::string channelName);
@@ -24,7 +26,10 @@ class Channel
 		std::string						getChannelName() const;
 		const std::map<int, Client *>&	getClients() const;
 		const std::map<int, Client *>&	getOperators() const;
+		const std::string&				getTopic() const;
 		bool							getChannelMode(ChannelModes mode) const;
+		
+		void							setTopic(const std::string& topic);
 		void							setChannelMode(ChannelModes mode, bool b);
 
 		// Methodes
@@ -33,5 +38,5 @@ class Channel
 		bool		setOperator(Client* client);
 		bool		removeOperator(Client* client);
 		bool 		isOperator(Client* client) const;
-		// topic]
+		void		sendMessageToClients(int fd, const std::string& message);
 };

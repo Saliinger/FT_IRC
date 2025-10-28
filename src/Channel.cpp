@@ -1,6 +1,7 @@
 #include "../include/Channel.hpp"
 #include "../include/Client.hpp"
 #include "../include/Modes.hpp"
+#include "../include/Utils.hpp"
 
 #include <map>
 #include <list>
@@ -26,11 +27,18 @@ const std::map<int, Client *>& Channel::getClients() const
 const std::map<int, Client *>& Channel::getOperators() const
 { return (_operatorList); }
 
+const std::string&  Channel::getTopic() const
+{ return (_topic); }
+
 bool    Channel::getChannelMode(ChannelModes mode) const
 { return _modes.getMode(mode); }
 
+// Setters
 void    Channel::setChannelMode(ChannelModes mode, bool b)
 { _modes.setMode(mode, b); }
+
+void    Channel::setTopic(const std::string& topic)
+{ _topic = topic; }
 
 // Methodes
 void    Channel::addClient(Client* client)
@@ -65,3 +73,14 @@ bool    Channel::isOperator(Client* client) const
         return (true);
     return (false);
 } 
+
+void    Channel::sendMessageToClients(int fd, const std::string& message)
+{
+    std::map<int, Client *>::const_iterator it = _clientList.begin();
+    while (it != _clientList.end())
+    {
+        if (it->first != fd)
+            sendToClient(it->first, message);
+        it++;
+    }
+}

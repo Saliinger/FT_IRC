@@ -4,7 +4,7 @@
 #include "../include/Server.hpp"
 #include "../include/Client.hpp"
 #include "../include/Channel.hpp"
-#include "../include/Channel.hpp"
+#include "../include/Modes.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -49,6 +49,9 @@ int main(int argc, char const *argv[])
 //     channel->setOperator(client);
 //     std::cout << channel->isOperator(client) << std::endl;
 //     std::cout << channel->removeOperator(client) << std::endl;
+
+//     channel->setTopic("test");
+//     std::cout << channel->getTopic() << std::endl;
 
 //     delete channel;
 //     delete client;
