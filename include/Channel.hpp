@@ -38,4 +38,5 @@ class Channel
 		bool		setOperator(Client* client);
 		bool		removeOperator(Client* client);
 		bool 		isOperator(Client* client) const;
+		void		sendMessageToClients(int fd, const std::string& message);
 };

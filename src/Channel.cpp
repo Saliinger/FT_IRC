@@ -1,6 +1,7 @@
 #include "../include/Channel.hpp"
 #include "../include/Client.hpp"
 #include "../include/Modes.hpp"
+#include "../include/Utils.hpp"
 
 #include <map>
 #include <list>
@@ -72,3 +73,14 @@ bool    Channel::isOperator(Client* client) const
         return (true);
     return (false);
 } 
+
+void    Channel::sendMessageToClients(int fd, const std::string& message)
+{
+    std::map<int, Client *>::const_iterator it = _clientList.begin();
+    while (it != _clientList.end())
+    {
+        if (it->first != fd)
+            sendToClient(it->first, message);
+        it++;
+    }
+}
