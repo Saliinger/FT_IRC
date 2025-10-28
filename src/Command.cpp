@@ -1,8 +1,7 @@
 #include "../include/Command.hpp"
 
-void Command::handleCommand(Client &client, std::map<std::string, Channel *> channels, std::string &command)
+void Command::handleCommand(Client &client, std::map<std::string, Channel *> channels, std::string &command, std::string &pass)
 {
-    (void)channels;
     std::vector<std::string> tokens = split(command, ' ');
     std::string cmd = tokens[0];
 
@@ -21,13 +20,13 @@ void Command::handleCommand(Client &client, std::map<std::string, Channel *> cha
 
         if (!client.getNickname().empty() && !client.getUsername().empty())
         {
+            (void)pass;
             client.authenticate();
             std::string nick = client.getNickname();
             std::cout << nick + " is auth." << std::endl;
             sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
             sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
             sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
-            sendToClient(client.getFd(), ":ft_irc 004 " + nick + " ft_irc 1.0 o o\r\n");
         }
     }
     else
@@ -85,7 +84,7 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> cha
     // used for any message between client -> channel / client -> client
     // PRIVMSG #channel :hello everyone!\r\n
     std::string channelName(args[1]);
-    std::string msg(":ft_irc <HELLO>!<HELLO>@<localhost> PRIVMSG #hello :hello everyone!\r\n");
+    std::string msg(":ft_irc <HELLO>!<HELLO>@<localhost> PRIVMSG #hello :hello from the server!\r\n");
     if (channelName == "#hello")
         sendToClient(client.getFd(), msg);
         // channels[channelName]->forwardMessage(client.getFd(), msg);

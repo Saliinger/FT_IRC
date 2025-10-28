@@ -61,6 +61,7 @@ Server::Server(int port, std::string &password) : _port(port), _password(passwor
 	fcntl(_server_fd, F_SETFL, O_NONBLOCK); // set the fd to non-blocking
 
 	std::cout << "Server listening on port " << port << std::endl;
+	std::cout << "Server Password: " + _password << std::endl;
 	_pollfds.push_back((pollfd){_server_fd, POLLIN, 0});
 }
 
@@ -135,7 +136,7 @@ void Server::handleClientMessage(int fd)
 			continue;
 
 		std::cout << "[FD " << fd << "] cmd: " << line << std::endl;
-		Command::handleCommand(*_clients[fd], _channels, line);
+		Command::handleCommand(*_clients[fd], _channels, line, _password);
 	}
 }
 
