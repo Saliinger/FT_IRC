@@ -4,6 +4,7 @@
 #include "../include/Server.hpp"
 #include "../include/Client.hpp"
 #include "../include/Channel.hpp"
+#include "../include/Channel.hpp"
 
 int main(int argc, char const *argv[])
 {

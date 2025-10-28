@@ -31,7 +31,11 @@ Server Server::operator=(const Server &src)
 	return *this;
 }
 
-Server::~Server() {}
+Server::~Server()
+{
+	// delete client / channel
+	// close all fd ( client / server )
+}
 
 // other constructor
 Server::Server(int port, std::string &password) : _port(port), _password(password)
@@ -77,15 +81,6 @@ void Server::run()
 	}
 }
 
-void Server::sendWelcome(Client &client)
-{
-	std::string nick = client.getNickname();
-	sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
-	sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
-	sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
-	sendToClient(client.getFd(), ":ft_irc 004 " + nick + " ft_irc 1.0 o o\r\n");
-}
-
 void Server::acceptClient()
 {
 	int client_fd = accept(_server_fd, NULL, NULL);
@@ -93,7 +88,11 @@ void Server::acceptClient()
 		return;
 	_clients[client_fd] = new Client(client_fd);
 	_pollfds.push_back((pollfd){client_fd, POLLIN, 0});
-	sendWelcome(*_clients[client_fd]);
+	// sendWelcome(*_clients[client_fd]);
+	std::string handchake(":ft_irc CAP * LS :\r\n");
+	sendToClient(client_fd, handchake);
+	std::string handchake2(":ft_irc 461 * JOIN :Not enough parameter\r\n");
+	sendToClient(client_fd, handchake2);
 }
 
 // max buffer[512]
@@ -106,21 +105,38 @@ void Server::acceptClient()
 
 void Server::handleClientMessage(int fd)
 {
-	// put the message in the buuffer if complete send it to handle command and remove the handled message
-	char temp_buffer[512]; // temp buffer to test stuff
-	int bytes_read = recv(fd, temp_buffer, sizeof(temp_buffer), 0);
+	char temp[512];
+	int bytes_read = recv(fd, temp, sizeof(temp) - 1, 0);
 
-	if (bytes_read < 0)
-		std::cout << "Error: message failed" << std::endl;
+	if (bytes_read <= 0)
+	{
+		if (bytes_read == 0)
+			std::cout << "Client disconnected: " << fd << std::endl;
+		else
+			std::cerr << "recv() error on fd " << fd << std::endl;
+		close(fd);
+		_clients.erase(fd);
+		_temp_buffer.erase(fd);
+		return;
+	}
 
-	std::string cmd = temp_buffer;
-	std::cout << "msg: " + cmd << std::endl;
-	Command::handleCommand(*_clients[fd], *_channels["hello"], cmd);
+	temp[bytes_read] = '\0';  // Null-terminate
+	_temp_buffer[fd] += temp; // Append to persistent buffer
 
-	// clear the buffer for test
-	for (size_t i = 0; i < 512; i++)
-		temp_buffer[i] = 0;
-	// end test
+	size_t pos;
+	while ((pos = _temp_buffer[fd].find("\r\n")) != std::string::npos)
+	{
+		// Extract one full command line
+		std::string line = _temp_buffer[fd].substr(0, pos);
+		_temp_buffer[fd].erase(0, pos + 2); // Remove processed message
+
+		// Trim leading/trailing whitespace
+		if (line.empty())
+			continue;
+
+		std::cout << "[FD " << fd << "] cmd: " << line << std::endl;
+		Command::handleCommand(*_clients[fd], _channels, line);
+	}
 }
 
 // when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat
