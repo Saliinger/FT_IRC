@@ -1,6 +1,6 @@
 #include "../include/Command.hpp"
 
-void Command::handleCommand(Client &client, std::map<std::string, Channel *> channels, std::string &command, std::string &pass)
+void Command::handleCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &command, std::string &pass)
 {
     std::vector<std::string> tokens = split(command, ' ');
     std::string cmd = tokens[0];
@@ -70,27 +70,31 @@ void Command::handleUser(Client &client, const std::vector<std::string> &args)
     std::cout << "new USER " + client.getUsername() << std::endl;
 }
 
-void Command::handleJoin(Client &client, std::map<std::string, Channel *> channels, const std::vector<std::string> &args)
+void Command::handleJoin(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
     // check if the channel exist if yes check the invites / join settings otherwise create a channel
     std::string channelName(args[1]);
-    channels[channelName] = new Channel(channelName);
-    channels[channelName]->addClient(&client);
-    std::cout << client.getNickname() + " created: " + channels[channelName]->getChannelName() << std::endl;
+    if (!channels[channelName])
+    {
+        channels[channelName] = new Channel(channelName);
+        std::cout << client.getNickname() + " created: " + channels[channelName]->getChannelName() << std::endl;
+    }
+    else
+    {
+        channels[channelName]->addClient(&client);
+        std::cout << client.getNickname() + " joined: " + channels[channelName]->getChannelName() << std::endl;
+    }
 }
 
-void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> channels, const std::vector<std::string> &args)
+void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
     // used for any message between client -> channel / client -> client
     // PRIVMSG #channel :hello everyone!\r\n
     std::string channelName(args[1]);
     std::string msg(":ft_irc <HELLO>!<HELLO>@<localhost> PRIVMSG #hello :hello from the server!\r\n"); // test message
-    
-    channels[channelName]->sendMessageToClients(client.getFd(), msg);
-    // channels[channelName]->forwardMessage(client.getFd(), msg);
-    // send constructed message to the specific channel
-    (void)channels;
 
+    channels[channelName]->sendMessageToClients(client.getFd(), msg);
+    // send constructed message to the specific channel
 }
 
 // if a message is sent to a channel need to send it to all participant of that channel

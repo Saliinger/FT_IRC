@@ -74,10 +74,13 @@ void Server::run()
 			throw std::runtime_error("Error: poll failed");
 		for (size_t i = 0; i < _pollfds.size(); i++)
 		{
-			if (_pollfds[i].fd == _server_fd) // check for new connection
-				acceptClient();
-			else if (_pollfds[i].events && POLLIN) // check for new message in fds
-				handleClientMessage(_pollfds[i].fd);
+			if (_pollfds[i].revents & POLLIN)
+			{
+				if (_pollfds[i].fd == _server_fd) // check for new connection
+					acceptClient();
+				else // check for new message in fds
+					handleClientMessage(_pollfds[i].fd);
+			}
 		}
 	}
 }
@@ -118,7 +121,7 @@ void Server::handleClientMessage(int fd)
 		close(fd);
 		_clients.erase(fd);
 		_temp_buffer.erase(fd);
-		return;
+		return; // need to remove the fd from the poll list
 	}
 
 	temp[bytes_read] = '\0';  // Null-terminate
