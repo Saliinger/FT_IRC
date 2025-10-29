@@ -116,3 +116,5 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &ch
 // if a message is sent to a channel need to send it to all participant of that channel
 // to get historique need to have std::vector<string> that got all previous message ready to send to a new joining client
 // forward message format <nick>!<user>@<host> PRIVMSG #channel :hello everyone!\r\n
+
+// to kick command KICK <channel> <user> [:<reason>] check op right from the user.fd
