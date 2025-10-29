@@ -12,8 +12,8 @@ class Channel;
 class Command
 {
 public:
-    static void handleCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &command, std::string &pass);
-    static void handlePass(Client &client, const std::vector<std::string> &args);
+    static void handleCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &command, const std::string pass);
+    static void handlePass(Client &client, const std::vector<std::string> &args, const std::string pass);
     static void handleNick(Client &client, const std::vector<std::string> &args);
     static void handleUser(Client &client, const std::vector<std::string> &args);
     static void handleJoin(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);

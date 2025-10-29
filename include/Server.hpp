@@ -35,6 +35,9 @@ public:
 	void acceptClient();
 	void handleClientMessage(int fd);
 
+	// getter
+	std::string getPass() const;
+
 private:
 	int _server_fd;											// fd of the serv for the calls to connect and send messages
 	int _port;												// port to register and listen from
