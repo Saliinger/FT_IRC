@@ -144,3 +144,9 @@ void Server::handleClientMessage(int fd)
 }
 
 // when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat
+
+
+// getter
+std::string Server::getPass() const {
+	return _password;
+}
