@@ -44,8 +44,8 @@ private:
 	void handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
-
-	void handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args); // un auth command
+	void handleKick(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleUnauthenticatedCommand(Client &client, const std::string &cmd, const std::vector<std::string> &tokens,
 									  const std::string &pass);
 
