@@ -5,30 +5,36 @@ Command::Command()
 	createCommandMap();
 }
 
-Command::Command(const Command &src) {}
+Command::Command(const Command &src)
+{
+	(void)src;
+	*this = src;
+}
 
-Command &Command::operator=(const Command &src) {}
+Command &Command::operator=(const Command &src)
+{
+	(void)src;
+	return *this;
+}
 
 Command::~Command() {}
 
 void Command::createCommandMap()
 {
-	_unauthCommand["JOIN"] = &Command::handleJoin;
-	_unauthCommand["PRIVMSG"] = &Command::handlePrivmsg;
+	// Unauthenticated commands - only registration commands allowed
 	_unauthCommand["NICK"] = &Command::handleNick;
 	_unauthCommand["USER"] = &Command::handleUser;
+	// Note: PASS is handled separately because it needs the password parameter
 
+	// Authenticated commands - channel operations
 	_authCommand["JOIN"] = &Command::handleJoin;
 	_authCommand["PRIVMSG"] = &Command::handlePrivmsg;
-	_authCommand["NICK"] = &Command::handleNick;
-	_authCommand["USER"] = &Command::handleUser;
-	_authCommand["QUIT"] = &Command::handleUser;
-
-	_authCommand["KICK"] = &Command::handleUser;
-	_authCommand["LEAVE"] = &Command::handleUser;
-	_authCommand["MODE"] = &Command::handleUser;
-	_authCommand["TOPIC"] = &Command::handleUser;
-	_authCommand["INVITE"] = &Command::handleUser;
+	_authCommand["QUIT"] = &Command::handleQuit;
+	_authCommand["LEAVE"] = &Command::handleLeave;
+	_authCommand["MODE"] = &Command::handleMode;
+	_authCommand["TOPIC"] = &Command::handleTopic;
+	_authCommand["INVITE"] = &Command::handleInvite;
+	// Note: NICK and USER handled specially in handleAuthenticatedCommand
 }
 
 void Command::run(Client &client, std::map<std::string, Channel *> &channels, std::string &command, const std::string pass)
@@ -56,23 +62,51 @@ void Command::run(Client &client, std::map<std::string, Channel *> &channels, st
 
 void Command::handleUnauthenticatedCommand(Client &client, const std::string &cmd, const std::vector<std::string> &tokens, const std::string &pass)
 {
+	// Special case for PASS command (needs password parameter)
+	if (cmd == "PASS")
+	{
+		handlePass(client, tokens, pass);
+		return;
+	}
+
+	// Look up other unauthenticated commands
 	std::map<std::string, UnauthHandler>::iterator it = _unauthCommand.find(cmd);
 	if (it == _unauthCommand.end())
-		return; // send command doesn't exit
+		return; // Command not found - silently ignore
 
-	it->second(client, tokens, pass);
+	// Call member function pointer - syntax: (this->*functionPointer)(args)
+	(this->*(it->second))(client, tokens);
 }
 
 void Command::handleAuthenticatedCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &cmd, std::vector<std::string> &tokens)
 {
-	Channel channel = channels.find(tokens[2]);
-	(void)channel; // will be used for channel related commands
+	// Special cases for commands that don't need channel map
+	if (cmd == "NICK")
+	{
+		handleNick(client, tokens);
+		return;
+	}
+	if (cmd == "USER")
+	{
+		sendToClient(client.getFd(), ":ft_irc 462 :You may not reregister\r\n");
+		return;
+	}
+	if (cmd == "PASS")
+	{
+		sendToClient(client.getFd(), ":ft_irc 462 :You may not reregister\r\n");
+		return;
+	}
 
+	// Look up authenticated command
 	std::map<std::string, AuthHandler>::iterator it = _authCommand.find(cmd);
 	if (it == _authCommand.end())
-		return; // send command doesn't exit
+	{
+		sendToClient(client.getFd(), ":ft_irc 421 " + cmd + " :Unknown command\r\n");
+		return;
+	}
 
-	it->second(client, channel, tokens);
+	// Call member function pointer - syntax: (this->*functionPointer)(args)
+	(this->*(it->second))(client, channels, tokens);
 }
 
 void Command::checkAndCompleteRegistration(
@@ -114,6 +148,11 @@ void Command::handlePass(Client &client, const std::vector<std::string> &args, c
 
 void Command::handleNick(Client &client, const std::vector<std::string> &args)
 {
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), ":ft_irc 431 :No nickname given\r\n");
+		return;
+	}
 	// change the nickname of a client
 	client.setNickname(args[1]);
 	std::cout << "new NICK " + client.getNickname() << std::endl;
@@ -121,6 +160,11 @@ void Command::handleNick(Client &client, const std::vector<std::string> &args)
 
 void Command::handleUser(Client &client, const std::vector<std::string> &args)
 {
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), ":ft_irc 461 USER :Not enough parameters\r\n");
+		return;
+	}
 	// change the username of a client
 	client.setUsername(args[1]);
 	std::cout << "new USER " + client.getUsername() << std::endl;
@@ -174,7 +218,41 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &ch
 
 // to kick command KICK <channel> <user> [:<reason>] check op right from the user.fd
 
-void Command::handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
-void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
-void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
-void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
+void Command::sendWelcomeMessage(Client &client)
+{
+	std::string nick = client.getNickname();
+	sendToClient(client.getFd(), ":ft_irc 001 " + nick + " :Welcome to the ft_irc Network, " + nick + "!\r\n");
+	sendToClient(client.getFd(), ":ft_irc 002 " + nick + " :Your host is ft_irc, running version 1.0\r\n");
+	sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
+}
+
+void Command::handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)client;
+	(void)channels;
+	(void)args;
+}
+void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)client;
+	(void)channels;
+	(void)args;
+}
+void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)client;
+	(void)channels;
+	(void)args;
+}
+void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)client;
+	(void)channels;
+	(void)args;
+}
+void Command::handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)client;
+	(void)channels;
+	(void)args;
+}

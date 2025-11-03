@@ -10,8 +10,11 @@
 class Client;
 class Channel;
 
-typedef void (*AuthHandler)(Client &, Channel &, const std::vector<std::string> &);
-typedef void (*UnauthHandler)(Client &, const std::vector<std::string> &, const std::string &);
+class Command;
+
+// Member function pointers that match actual handler signatures
+typedef void (Command::*AuthHandler)(Client &, std::map<std::string, Channel *> &, const std::vector<std::string> &);
+typedef void (Command::*UnauthHandler)(Client &, const std::vector<std::string> &);
 
 class Command
 {
@@ -37,8 +40,12 @@ private:
 	void handleUser(Client &client, const std::vector<std::string> &args);
 	void handleJoin(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handlePrivmsg(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 
-	// un auth command
+	void handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args); // un auth command
 	void handleUnauthenticatedCommand(Client &client, const std::string &cmd, const std::vector<std::string> &tokens,
 									  const std::string &pass);
 
