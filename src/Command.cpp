@@ -12,7 +12,7 @@ Command &Command::operator=(const Command &src) {}
 Command::~Command() {}
 
 void Command::createCommandMap()
-{ // Return void
+{
 	_unauthCommand["JOIN"] = &Command::handleJoin;
 	_unauthCommand["PRIVMSG"] = &Command::handlePrivmsg;
 	_unauthCommand["NICK"] = &Command::handleNick;
@@ -22,6 +22,13 @@ void Command::createCommandMap()
 	_authCommand["PRIVMSG"] = &Command::handlePrivmsg;
 	_authCommand["NICK"] = &Command::handleNick;
 	_authCommand["USER"] = &Command::handleUser;
+	_authCommand["QUIT"] = &Command::handleUser;
+
+	_authCommand["KICK"] = &Command::handleUser;
+	_authCommand["LEAVE"] = &Command::handleUser;
+	_authCommand["MODE"] = &Command::handleUser;
+	_authCommand["TOPIC"] = &Command::handleUser;
+	_authCommand["INVITE"] = &Command::handleUser;
 }
 
 void Command::run(Client &client, std::map<std::string, Channel *> &channels, std::string &command, const std::string pass)
@@ -166,3 +173,8 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &ch
 // forward message format <nick>!<user>@<host> PRIVMSG #channel :hello everyone!\r\n
 
 // to kick command KICK <channel> <user> [:<reason>] check op right from the user.fd
+
+void Command::handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
+void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
+void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
+void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args) {}
