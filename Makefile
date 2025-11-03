@@ -12,7 +12,8 @@ SOURCES =	$(SRCDIR)/main.cpp \
 			$(SRCDIR)/Channel.cpp \
 			$(SRCDIR)/Client.cpp \
 			$(SRCDIR)/Modes.cpp \
-			$(SRCDIR)/Server.cpp
+			$(SRCDIR)/Server.cpp \
+			$(SRCDIR)/Errors.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 

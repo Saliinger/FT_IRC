@@ -1,0 +1,12 @@
+Pour utiliser les codes erros:
+
+#include "../include/Errors.hpp"
+
+// Simple
+sendToClient(fd, formatReply(ERR_NEEDMOREPARAMS, nick, "PASS :Not enough parameters"));
+
+// Avec paramètres
+sendToClient(fd, formatError(ERR_CHANOPRIVSNEEDED, nick, "#channel", ":You're not channel operator"));
+
+// Direct
+sendToClient(fd, ":ft_irc " ERR_NICKNAMEINUSE " " + nick + " :Nickname is already in use\r\n");
