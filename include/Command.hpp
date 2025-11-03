@@ -28,6 +28,9 @@ private:
 	std::map<std::string, AuthHandler> _authCommand;
 	std::map<std::string, UnauthHandler> _unauthCommand;
 
+	// init
+	void createCommandMap();
+
 	// helper
 	void handlePass(Client &client, const std::vector<std::string> &args, const std::string pass);
 	void handleNick(Client &client, const std::vector<std::string> &args);
@@ -45,8 +48,5 @@ private:
 	// auth commands
 	void handleAuthenticatedCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &cmd, std::vector<std::string> &tokens);
 
-	void createCommandMap();
-
-	bool requiresAuthentication(const std::string &cmd);
 	void sendWelcomeMessage(Client &client);
 };
