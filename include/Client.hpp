@@ -10,6 +10,7 @@ class Client
     private:
         int                                 _fd;
         bool                                _isAuth;
+        bool                                _isRegistered;
         std::string                         _nickname;
         std::string                         _username;
         std::map<std::string, Channel *>    _channelList;
@@ -21,6 +22,7 @@ class Client
         // Getters & Setters
         int             getFd() const;
         bool            isAuthenticated() const;
+        bool            isRegistered() const;
         std::string     getNickname() const;
         std::string     getUsername() const;
 
@@ -29,6 +31,8 @@ class Client
 
         // Methodes
         void            authenticate();
+        void            unAuthenticate();
+        void            registerClient();
         void            joinChannel(Channel* channel);
         void            leaveChannel(Channel* channel);
         void            listChannels();

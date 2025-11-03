@@ -7,7 +7,8 @@
 // Constructor & Destructor
 Client::Client(int fd)
     :   _fd(fd),
-        _isAuth(false)
+        _isAuth(false),
+        _isRegistered(false)
 { std::cout   << "Client constructor called" << std::endl; }
 
 Client::~Client()
@@ -19,6 +20,9 @@ int Client::getFd() const
 
 bool Client::isAuthenticated() const
 { return (_isAuth); }
+
+bool Client::isRegistered() const
+{ return (_isRegistered); }
 
 std::string Client::getNickname() const
 { return (_nickname); }
@@ -36,6 +40,12 @@ void    Client::setUsername(const std::string& username)
 //Methodes
 void    Client::authenticate()
 { _isAuth = true; }
+
+void    Client::unAuthenticate()
+{ _isAuth = false; }
+
+void    Client::registerClient()
+{ _isRegistered = true; }
 
 void    Client::joinChannel(Channel* channel)
 {
