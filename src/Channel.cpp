@@ -45,7 +45,11 @@ void    Channel::addClient(Client* client)
 { _clientList[client->getFd()] = client; }
 
 void    Channel::removeClient(Client* client)
-{ _clientList.erase(client->getFd()); }
+{ 
+    if (isOperator(client))
+        removeOperator(client);
+    _clientList.erase(client->getFd()); 
+}
 
 bool    Channel::setOperator(Client* client)
 {
