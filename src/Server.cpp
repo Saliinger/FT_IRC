@@ -139,14 +139,15 @@ void Server::handleClientMessage(int fd)
 			continue;
 
 		std::cout << "[FD " << fd << "] cmd: " << line << std::endl;
-		Command::handleCommand(*_clients[fd], _channels, line, _password);
+		Command to_run;
+		to_run.run(*_clients[fd], _channels, line, _password);
 	}
 }
 
 // when someone join a channel everyone get a message that they joined :alice!alice@localhost JOIN :#chat
 
-
 // getter
-std::string Server::getPass() const {
+std::string Server::getPass() const
+{
 	return _password;
 }
