@@ -123,6 +123,19 @@ void Command::checkAndCompleteRegistration(
 	}
 }
 
+// base setup
+void Command::handleUser(Client &client, const std::vector<std::string> &args)
+{
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), ":ft_irc 461 USER :Not enough parameters\r\n");
+		return;
+	}
+	// change the username of a client
+	client.setUsername(args[1]);
+	std::cout << "new USER " + client.getUsername() << std::endl;
+}
+
 void Command::handlePass(Client &client, const std::vector<std::string> &args, const std::string pass)
 {
 	if (args.size() < 2)
@@ -158,18 +171,7 @@ void Command::handleNick(Client &client, const std::vector<std::string> &args)
 	std::cout << "new NICK " + client.getNickname() << std::endl;
 }
 
-void Command::handleUser(Client &client, const std::vector<std::string> &args)
-{
-	if (args.size() < 2)
-	{
-		sendToClient(client.getFd(), ":ft_irc 461 USER :Not enough parameters\r\n");
-		return;
-	}
-	// change the username of a client
-	client.setUsername(args[1]);
-	std::cout << "new USER " + client.getUsername() << std::endl;
-}
-
+// channel related commands
 void Command::handleJoin(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	// check if the channel exist if yes check the invites / join settings otherwise create a channel
@@ -212,12 +214,6 @@ void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &ch
 		channels[target]->sendMessageToClients(client.getFd(), formattedMsg);
 }
 
-// if a message is sent to a channel need to send it to all participant of that channel
-// to get historique need to have std::vector<string> that got all previous message ready to send to a new joining client
-// forward message format <nick>!<user>@<host> PRIVMSG #channel :hello everyone!\r\n
-
-// to kick command KICK <channel> <user> [:<reason>] check op right from the user.fd
-
 void Command::sendWelcomeMessage(Client &client)
 {
 	std::string nick = client.getNickname();
@@ -228,9 +224,15 @@ void Command::sendWelcomeMessage(Client &client)
 
 void Command::handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
-	(void)client;
-	(void)channels;
-	(void)args;
+	// leave channel
+	std:: string channelName = args[1];
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+	channels[channelName]->removeClient(&client);
+	sendToClient(client.getFd(), ":ft_irc" + client.getNickname() + "!" + client.getUsername() + "@localhost PART:" + channelName + "\r\n");
 }
 void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
@@ -240,18 +242,27 @@ void Command::handleMode(Client &client, std::map<std::string, Channel *> &chann
 }
 void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
-	(void)client;
-	(void)channels;
-	(void)args;
+	std:: string channelName = args[1];
+    if (channels.find(channelName) == channels.end())
+    {
+        sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+        return;
+    }
+	// to add reconstruction of topic from args after :
+	channels[channelName]->setTopic("set topix");
 }
-void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
-{
-	(void)client;
-	(void)channels;
-	(void)args;
-}
+
 void Command::handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
+	// invite on a channel
+	(void)client;
+	(void)channels;
+	(void)args;
+}
+
+void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	// leave the irc server so close fd but do not delete client
 	(void)client;
 	(void)channels;
 	(void)args;
