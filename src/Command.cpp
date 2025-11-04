@@ -248,6 +248,7 @@ void Command::handleTopic(Client &client, std::map<std::string, Channel *> &chan
         sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
         return;
     }
+
 	// reconstruction of topic from args after :
 	std::string topic;
 	for (size_t i = 2; i < args.size(); i++) {
@@ -255,12 +256,29 @@ void Command::handleTopic(Client &client, std::map<std::string, Channel *> &chan
             topic += " ";
         topic += args[i];
 	}
+	// add right to change topic if operator
+	const std::map<int, Client*>& operators = channels[channelName]->getOperators();
+	bool isOperator = false;
+	for (std::map<int, Client*>::const_iterator it = operators.begin(); it != operators.end(); ++it) {
+		if (it->second == &client) {
+			isOperator = true;
+			break;
+		}
+	}
+
+	if (!isOperator) {
+        sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+        return;
+    }
 	channels[channelName]->setTopic(topic);
 }
 
 void Command::handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	// invite on a channel
+	// check if client has the right to invite
+	// get the client to invite from args[1]
+	// send invite message to the client
 	(void)client;
 	(void)channels;
 	(void)args;
