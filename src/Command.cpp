@@ -234,12 +234,14 @@ void Command::handleLeave(Client &client, std::map<std::string, Channel *> &chan
 	channels[channelName]->removeClient(&client);
 	sendToClient(client.getFd(), ":ft_irc" + client.getNickname() + "!" + client.getUsername() + "@localhost PART:" + channelName + "\r\n");
 }
+
 void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	(void)client;
 	(void)channels;
 	(void)args;
 }
+
 void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	std:: string channelName = args[1];
@@ -279,9 +281,18 @@ void Command::handleInvite(Client &client, std::map<std::string, Channel *> &cha
 	// check if client has the right to invite
 	// get the client to invite from args[1]
 	// send invite message to the client
-	(void)client;
-	(void)channels;
+	// :InviterNick!user@host INVITE TargetNick :#channel
+	std:: string channelName = args[1];
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	std::string target = args[2];
+	Client to_invite ;
 	(void)args;
+	// maxi problem here to get the client to invite
 }
 
 void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
