@@ -248,8 +248,14 @@ void Command::handleTopic(Client &client, std::map<std::string, Channel *> &chan
         sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
         return;
     }
-	// to add reconstruction of topic from args after :
-	channels[channelName]->setTopic("set topix");
+	// reconstruction of topic from args after :
+	std::string topic;
+	for (size_t i = 2; i < args.size(); i++) {
+		if (i > 2)
+            topic += " ";
+        topic += args[i];
+	}
+	channels[channelName]->setTopic(topic);
 }
 
 void Command::handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
