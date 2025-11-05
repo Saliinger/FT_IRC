@@ -1,4 +1,5 @@
 #include "../include/Command.hpp"
+#include <unistd.h>
 
 Command::Command()
 {
@@ -37,7 +38,7 @@ void Command::createCommandMap()
 	// Note: NICK and USER handled specially in handleAuthenticatedCommand
 }
 
-void Command::run(Client &client, std::map<std::string, Channel *> &channels, std::string &command, const std::string pass)
+void Command::run(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, std::string &command, const std::string pass)
 {
 	std::vector<std::string> tokens = split(command, ' ');
 	std::string cmd = tokens[0];
@@ -52,11 +53,11 @@ void Command::run(Client &client, std::map<std::string, Channel *> &channels, st
 	if (!client.isAuthenticated())
 	{
 		handleUnauthenticatedCommand(client, cmd, tokens, pass);
-		checkAndCompleteRegistration(client, channels, command, pass);
+		checkAndCompleteRegistration(clients, client, channels, command, pass);
 	}
 	else
 	{
-		handleAuthenticatedCommand(client, channels, cmd, tokens);
+		handleAuthenticatedCommand(clients, client, channels, cmd, tokens);
 	}
 }
 
@@ -78,7 +79,7 @@ void Command::handleUnauthenticatedCommand(Client &client, const std::string &cm
 	(this->*(it->second))(client, tokens);
 }
 
-void Command::handleAuthenticatedCommand(Client &client, std::map<std::string, Channel *> &channels, std::string &cmd, std::vector<std::string> &tokens)
+void Command::handleAuthenticatedCommand(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, std::string &cmd, std::vector<std::string> &tokens)
 {
 	// Special cases for commands that don't need channel map
 	if (cmd == "NICK")
@@ -106,10 +107,11 @@ void Command::handleAuthenticatedCommand(Client &client, std::map<std::string, C
 	}
 
 	// Call member function pointer - syntax: (this->*functionPointer)(args)
-	(this->*(it->second))(client, channels, tokens);
+	(this->*(it->second))(clients, client, channels, tokens);
 }
 
 void Command::checkAndCompleteRegistration(
+	std::map<int, Client *> &clients,
 	Client &client,
 	std::map<std::string, Channel *> &channels,
 	std::string &command,
@@ -119,7 +121,7 @@ void Command::checkAndCompleteRegistration(
 	{
 		client.authenticate();
 		sendWelcomeMessage(client);
-		run(client, channels, command, pass);
+		run(clients, client, channels, command, pass);
 	}
 }
 
@@ -172,8 +174,9 @@ void Command::handleNick(Client &client, const std::vector<std::string> &args)
 }
 
 // channel related commands
-void Command::handleJoin(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+void Command::handleJoin(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
+	(void)clients;
 	// check if the channel exist if yes check the invites / join settings otherwise create a channel
 	std::string channelName(args[1]);
 	if (!channels[channelName])
@@ -185,8 +188,9 @@ void Command::handleJoin(Client &client, std::map<std::string, Channel *> &chann
 	std::cout << client.getNickname() + " joined: " + channels[channelName]->getChannelName() << std::endl;
 }
 
-void Command::handlePrivmsg(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+void Command::handlePrivmsg(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
+	(void)clients;
 	if (args.size() < 3) // Need at least: PRIVMSG <target> :<message>
 		return;
 
@@ -222,10 +226,11 @@ void Command::sendWelcomeMessage(Client &client)
 	sendToClient(client.getFd(), ":ft_irc 003 " + nick + " :This server was created today\r\n");
 }
 
-void Command::handleLeave(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+void Command::handleLeave(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
+	(void)clients;
 	// leave channel
-	std:: string channelName = args[1];
+	std::string channelName = args[1];
 	if (channels.find(channelName) == channels.end())
 	{
 		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
@@ -235,70 +240,286 @@ void Command::handleLeave(Client &client, std::map<std::string, Channel *> &chan
 	sendToClient(client.getFd(), ":ft_irc" + client.getNickname() + "!" + client.getUsername() + "@localhost PART:" + channelName + "\r\n");
 }
 
-void Command::handleMode(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+void Command::handleMode(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
-	(void)client;
-	(void)channels;
-	(void)args;
-}
-
-void Command::handleTopic(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
-{
-	std:: string channelName = args[1];
-    if (channels.find(channelName) == channels.end())
-    {
-        sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
-        return;
-    }
-
-	// reconstruction of topic from args after :
-	std::string topic;
-	for (size_t i = 2; i < args.size(); i++) {
-		if (i > 2)
-            topic += " ";
-        topic += args[i];
-	}
-	// add right to change topic if operator
-	const std::map<int, Client*>& operators = channels[channelName]->getOperators();
-	bool isOperator = false;
-	for (std::map<int, Client*>::const_iterator it = operators.begin(); it != operators.end(); ++it) {
-		if (it->second == &client) {
-			isOperator = true;
-			break;
-		}
+	(void)clients;
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "MODE :Not enough parameters"));
+		return;
 	}
 
-	if (!isOperator) {
-        sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
-        return;
-    }
-	channels[channelName]->setTopic(topic);
-}
-
-void Command::handleInvite(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
-{
-	// invite on a channel
-	// check if client has the right to invite
-	// get the client to invite from args[1]
-	// send invite message to the client
-	// :InviterNick!user@host INVITE TargetNick :#channel
-	std:: string channelName = args[1];
+	std::string channelName = args[1];
 	if (channels.find(channelName) == channels.end())
 	{
 		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
 		return;
 	}
 
-	std::string target = args[2];
-	Client to_invite ;
-	(void)args;
-	// maxi problem here to get the client to invite
+	Channel *chan = channels[channelName];
+
+	// If only channel supplied, return current channel modes
+	if (args.size() == 2)
+	{
+		std::string modeStr = "+";
+		if (chan->getChannelMode(MODE_T))
+			modeStr += "t";
+		if (chan->getChannelMode(MODE_I))
+			modeStr += "i";
+		if (chan->getChannelMode(MODE_K))
+			modeStr += "k";
+		if (chan->getChannelMode(MODE_L))
+			modeStr += "l";
+
+		// If no channel modes, still respond with +
+		sendToClient(client.getFd(), ":ft_irc " RPL_CHANNELMODEIS " " + client.getNickname() + " " + channelName + " " + modeStr + "\r\n");
+		return;
+	}
+
+	// Modes with parameters or toggles
+	std::string modeArg = args[2];
+	if (modeArg.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_UNKNOWNMODE, client.getNickname(), std::string(1, modeArg.empty() ? ' ' : modeArg[0]) + " :is unknown mode char to me for " + channelName));
+		return;
+	}
+
+	char sign = modeArg[0];
+	char flag = modeArg[1];
+
+	// User operator mode (+o / -o) requires a target nick
+	if (flag == 'o')
+	{
+		if (args.size() < 4)
+		{
+			sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "MODE :Not enough parameters"));
+			return;
+		}
+
+		// Only channel operators can change other user's operator status
+		if (!chan->isOperator(&client))
+		{
+			sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+			return;
+		}
+
+		std::string targetNick = args[3];
+		Client *targetClient = NULL;
+		const std::map<int, Client *> &clients = chan->getClients();
+		for (std::map<int, Client *>::const_iterator it = clients.begin(); it != clients.end(); ++it)
+		{
+			if (it->second->getNickname() == targetNick)
+			{
+				targetClient = it->second;
+				break;
+			}
+		}
+
+		if (!targetClient)
+		{
+			sendToClient(client.getFd(), formatReply(ERR_USERNOTINCHANNEL, client.getNickname(), targetNick + " " + channelName + " :They aren't on that channel"));
+			return;
+		}
+
+		bool res = false;
+		std::string flagStr(1, flag);
+		if (sign == '+')
+		{
+			res = chan->setOperator(targetClient);
+		}
+		else if (sign == '-')
+		{
+			res = chan->removeOperator(targetClient);
+		}
+		else
+		{
+			sendToClient(client.getFd(), formatReply(ERR_UNKNOWNMODE, client.getNickname(), std::string(1, flag) + " :is unknown mode char to me for " + channelName));
+			return;
+		}
+
+		// Notify channel of the mode change
+		std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost MODE " + channelName + " " + std::string(1, sign) + flagStr + " " + targetNick + "\r\n";
+		// send to all channel members (including setter)
+		chan->sendMessageToClients(-1, formattedMsg);
+		return;
+	}
+
+	// Channel-level boolean modes (example: t)
+	if (flag == 't' || flag == 'i' || flag == 'k' || flag == 'l')
+	{
+		// Only channel operators can set channel modes
+		if (!chan->isOperator(&client))
+		{
+			sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+			return;
+		}
+
+		ChannelModes modeEnum;
+		if (flag == 't')
+			modeEnum = MODE_T;
+		else if (flag == 'i')
+			modeEnum = MODE_I;
+		else if (flag == 'k')
+			modeEnum = MODE_K;
+		else
+			modeEnum = MODE_L;
+
+		bool set = (sign == '+');
+		chan->setChannelMode(modeEnum, set);
+
+		std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost MODE " + channelName + " " + std::string(1, sign) + std::string(1, flag) + "\r\n";
+		chan->sendMessageToClients(-1, formattedMsg);
+		return;
+	}
+
+	// Unknown mode character
+	sendToClient(client.getFd(), formatReply(ERR_UNKNOWNMODE, client.getNickname(), std::string(1, flag) + " :is unknown mode char to me for " + channelName));
 }
 
-void Command::handleQuit(Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+void Command::handleTopic(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
-	// leave the irc server so close fd but do not delete client
-	(void)client;
-	(void)channels;
-	(void)args;
+	(void)clients;
+	std::string channelName = args[1];
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	// reconstruction of topic from args after :
+	std::string topic;
+	for (size_t i = 2; i < args.size(); i++)
+	{
+		if (i > 2)
+			topic += " ";
+		topic += args[i];
+	}
+	// add right to change topic if operator
+	const std::map<int, Client *> &operators = channels[channelName]->getOperators();
+	bool isOperator = false;
+	for (std::map<int, Client *>::const_iterator it = operators.begin(); it != operators.end(); ++it)
+	{
+		if (it->second == &client)
+		{
+			isOperator = true;
+			break;
+		}
+	}
+
+	if (!isOperator)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+		return;
+	}
+	channels[channelName]->setTopic(topic);
+}
+
+void Command::handleInvite(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	// INVITE <nickname> <channel>
+	if (args.size() < 3)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "INVITE :Not enough parameters"));
+		return;
+	}
+
+	std::string targetNick = args[1];
+	std::string channelName = args[2];
+
+	// Check if channel exists
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	Channel *chan = channels[channelName];
+
+	// Check if inviter is on the channel
+	if (!chan->getClients().count(client.getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTONCHANNEL, client.getNickname(), channelName + " :You're not on that channel"));
+		return;
+	}
+
+	// Check if inviter is operator (if channel has invite-only mode, operator check may be needed)
+	if (!chan->isOperator(&client))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+		return;
+	}
+
+	// Find target client by nickname in server's client map
+	Client *targetClient = NULL;
+	for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if (it->second->getNickname() == targetNick)
+		{
+			targetClient = it->second;
+			break;
+		}
+	}
+
+	if (!targetClient)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHNICK, client.getNickname(), targetNick + " :No such nick/channel"));
+		return;
+	}
+
+	// Check if target is already on the channel
+	if (chan->getClients().count(targetClient->getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_USERONCHANNEL, client.getNickname(), targetNick + " " + channelName + " :is already on channel"));
+		return;
+	}
+
+	// Send RPL_INVITING to inviter
+	sendToClient(client.getFd(), ":ft_irc " RPL_INVITING " " + client.getNickname() + " " + targetNick + " " + channelName + "\r\n");
+
+	// Send INVITE message to target client
+	std::string inviteMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost INVITE " + targetNick + " :" + channelName + "\r\n";
+	sendToClient(targetClient->getFd(), inviteMsg);
+}
+
+void Command::handleQuit(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)clients;
+	// Build quit message from args (optional)
+	std::string reason = "Client Quit";
+	if (args.size() >= 2)
+	{
+		// reconstruct reason (may start with ':')
+		reason.clear();
+		for (size_t i = 1; i < args.size(); ++i)
+		{
+			if (i > 1)
+				reason += " ";
+			reason += args[i];
+		}
+		if (!reason.empty() && reason[0] == ':')
+			reason = reason.substr(1);
+	}
+
+	std::string quitMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost QUIT :" + reason + "\r\n";
+
+	// Broadcast QUIT to all channels the client is a member of and remove client from them
+	for (std::map<std::string, Channel *>::iterator it = channels.begin(); it != channels.end(); ++it)
+	{
+		Channel *ch = it->second;
+		const std::map<int, Client *> &clients = ch->getClients();
+		if (clients.find(client.getFd()) != clients.end())
+		{
+			// send to others in channel (exclude quitting fd)
+			ch->sendMessageToClients(client.getFd(), quitMsg);
+			// remove client from channel
+			ch->removeClient(&client);
+		}
+	}
+
+	// mark client unauthenticated
+	client.unAuthenticate();
+
+	// Notify the client (optional) then close fd
+	sendToClient(client.getFd(), quitMsg);
+	close(client.getFd());
 }

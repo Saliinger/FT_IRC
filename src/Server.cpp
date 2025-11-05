@@ -140,7 +140,7 @@ void Server::handleClientMessage(int fd)
 
 		std::cout << "[FD " << fd << "] cmd: " << line << std::endl;
 		Command to_run;
-		to_run.run(*_clients[fd], _channels, line, _password);
+		to_run.run(_clients, *_clients[fd], _channels, line, _password);
 	}
 }
 
