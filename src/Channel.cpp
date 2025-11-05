@@ -88,3 +88,10 @@ void    Channel::sendMessageToClients(int fd, const std::string& message)
         it++;
     }
 }
+
+
+void    Channel::setPassword(const std::string &pass)
+{ _password = pass; }
+
+const std::string   &Channel::getPassword() const
+{ return (_password); }

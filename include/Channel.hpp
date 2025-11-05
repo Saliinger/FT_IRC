@@ -13,6 +13,7 @@ class Channel
 	private:
 		std::string					_channelName;
 		std::string					_topic;
+		std::string					_password;
 		std::map<int, Client *>		_clientList;
 		std::map<int, Client *>		_operatorList;
 		Modes						_modes;
@@ -27,8 +28,10 @@ class Channel
 		const std::map<int, Client *>&	getClients() const;
 		const std::map<int, Client *>&	getOperators() const;
 		const std::string&				getTopic() const;
+		const std::string&				getPassword() const;
 		bool							getChannelMode(ChannelModes mode) const;
-		
+
+		void							setPassword(const std::string &pass);
 		void							setTopic(const std::string& topic);
 		void							setChannelMode(ChannelModes mode, bool b);
 
