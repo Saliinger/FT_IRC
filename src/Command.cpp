@@ -23,15 +23,16 @@ Command::~Command() {}
 void Command::createCommandMap()
 {
 	// Unauthenticated commands - only registration commands allowed
-	_unauthCommand["NICK"] = &Command::handleNick;
 	_unauthCommand["USER"] = &Command::handleUser;
-	// Note: PASS is handled separately because it needs the password parameter
+	// Note: PASS and NICK are handled separately
 
 	// Authenticated commands - channel operations
 	_authCommand["JOIN"] = &Command::handleJoin;
 	_authCommand["PRIVMSG"] = &Command::handlePrivmsg;
 	_authCommand["QUIT"] = &Command::handleQuit;
 	_authCommand["LEAVE"] = &Command::handleLeave;
+	_authCommand["PART"] = &Command::handlePart;
+	_authCommand["KICK"] = &Command::handleKick;
 	_authCommand["MODE"] = &Command::handleMode;
 	_authCommand["TOPIC"] = &Command::handleTopic;
 	_authCommand["INVITE"] = &Command::handleInvite;
@@ -52,7 +53,7 @@ void Command::run(std::map<int, Client *> &clients, Client &client, std::map<std
 
 	if (!client.isAuthenticated())
 	{
-		handleUnauthenticatedCommand(client, cmd, tokens, pass);
+		handleUnauthenticatedCommand(clients, client, cmd, tokens, pass);
 		checkAndCompleteRegistration(clients, client, channels, command, pass);
 	}
 	else
@@ -61,12 +62,19 @@ void Command::run(std::map<int, Client *> &clients, Client &client, std::map<std
 	}
 }
 
-void Command::handleUnauthenticatedCommand(Client &client, const std::string &cmd, const std::vector<std::string> &tokens, const std::string &pass)
+void Command::handleUnauthenticatedCommand(std::map<int, Client *> &clients, Client &client, const std::string &cmd, const std::vector<std::string> &tokens, const std::string &pass)
 {
 	// Special case for PASS command (needs password parameter)
 	if (cmd == "PASS")
 	{
 		handlePass(client, tokens, pass);
+		return;
+	}
+
+	// Special case for NICK (needs clients map)
+	if (cmd == "NICK")
+	{
+		handleNick(clients, client, tokens);
 		return;
 	}
 
@@ -84,7 +92,7 @@ void Command::handleAuthenticatedCommand(std::map<int, Client *> &clients, Clien
 	// Special cases for commands that don't need channel map
 	if (cmd == "NICK")
 	{
-		handleNick(client, tokens);
+		handleNick(clients, client, tokens);
 		return;
 	}
 	if (cmd == "USER")
@@ -161,15 +169,28 @@ void Command::handlePass(Client &client, const std::vector<std::string> &args, c
 	std::cout << "Password accepted for potential client" << std::endl;
 }
 
-void Command::handleNick(Client &client, const std::vector<std::string> &args)
+void Command::handleNick(std::map<int, Client *> &clients, Client &client, const std::vector<std::string> &args)
 {
 	if (args.size() < 2)
 	{
 		sendToClient(client.getFd(), ":ft_irc 431 :No nickname given\r\n");
 		return;
 	}
+
+	std::string newNick = args[1];
+
+	// Check if nickname is already in use by another client
+	for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if (it->second->getFd() != client.getFd() && it->second->getNickname() == newNick)
+		{
+			sendToClient(client.getFd(), ":ft_irc " ERR_NICKNAMEINUSE " " + (client.getNickname().empty() ? "*" : client.getNickname()) + " " + newNick + " :Nickname is already in use\r\n");
+			return;
+		}
+	}
+
 	// change the nickname of a client
-	client.setNickname(args[1]);
+	client.setNickname(newNick);
 	std::cout << "new NICK " + client.getNickname() << std::endl;
 }
 
@@ -177,24 +198,87 @@ void Command::handleNick(Client &client, const std::vector<std::string> &args)
 void Command::handleJoin(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	(void)clients;
-	// check if the channel exist if yes check the invites / join settings otherwise create a channel
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "JOIN :Not enough parameters"));
+		return;
+	}
+
 	std::string channelName(args[1]);
+
+	// Validate channel name starts with #
+	if (channelName.empty() || channelName[0] != '#')
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	bool isNewChannel = false;
 	if (!channels[channelName])
 	{
 		channels[channelName] = new Channel(channelName);
+		isNewChannel = true;
 		std::cout << client.getNickname() + " created: " + channels[channelName]->getChannelName() << std::endl;
 	}
-	channels[channelName]->addClient(&client);
-	std::cout << client.getNickname() + " joined: " + channels[channelName]->getChannelName() << std::endl;
+
+	Channel *chan = channels[channelName];
+
+	// Check if already in channel
+	if (chan->getClients().count(client.getFd()))
+	{
+		return; // Already in channel, silently ignore
+	}
+
+	chan->addClient(&client);
+
+	// Make creator operator
+	if (isNewChannel)
+	{
+		chan->setOperator(&client);
+	}
+
+	// Send JOIN confirmation to the joining client
+	std::string joinMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost JOIN :" + channelName + "\r\n";
+	sendToClient(client.getFd(), joinMsg);
+
+	// Broadcast JOIN to all other members in the channel
+	chan->sendMessageToClients(client.getFd(), joinMsg);
+
+	// Send topic if exists
+	if (!chan->getTopic().empty())
+	{
+		sendToClient(client.getFd(), ":ft_irc " RPL_TOPIC " " + client.getNickname() + " " + channelName + " :" + chan->getTopic() + "\r\n");
+	}
+	else
+	{
+		sendToClient(client.getFd(), ":ft_irc " RPL_NOTOPIC " " + client.getNickname() + " " + channelName + " :No topic is set\r\n");
+	}
+
+	// Send NAMES list (users in channel)
+	std::string namesList = ":" + client.getNickname();
+	const std::map<int, Client *> &clientsInChan = chan->getClients();
+	for (std::map<int, Client *>::const_iterator it = clientsInChan.begin(); it != clientsInChan.end(); ++it)
+	{
+		if (chan->isOperator(it->second))
+			namesList += " @" + it->second->getNickname();
+		else
+			namesList += " " + it->second->getNickname();
+	}
+	sendToClient(client.getFd(), ":ft_irc " RPL_NAMREPLY " " + client.getNickname() + " = " + channelName + " " + namesList + "\r\n");
+	sendToClient(client.getFd(), ":ft_irc " RPL_ENDOFNAMES " " + client.getNickname() + " " + channelName + " :End of NAMES list\r\n");
+
+	std::cout << client.getNickname() + " joined: " + chan->getChannelName() << std::endl;
 }
 
 void Command::handlePrivmsg(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
-	(void)clients;
 	if (args.size() < 3) // Need at least: PRIVMSG <target> :<message>
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NORECIPIENT, client.getNickname(), "PRIVMSG :No recipient given"));
 		return;
+	}
 
-	std::string target = args[1]; // channel name
+	std::string target = args[1];
 
 	// get the messsage after ':'
 	std::string message = "";
@@ -208,14 +292,58 @@ void Command::handlePrivmsg(std::map<int, Client *> &clients, Client &client, st
 	if (!message.empty() && message[0] == ':')
 		message = message.substr(1);
 
+	if (message.empty())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTEXTTOSEND, client.getNickname(), ":No text to send"));
+		return;
+	}
+
 	// Build IRC message
 	std::string formattedMsg = ":" + client.getNickname() + "!" +
 							   client.getUsername() + "@localhost PRIVMSG " +
 							   target + " :" + message + "\r\n";
 
-	// Send to channel (if it exists)
-	if (channels.find(target) != channels.end())
-		channels[target]->sendMessageToClients(client.getFd(), formattedMsg);
+	// Check if target is a channel (starts with #)
+	if (!target.empty() && target[0] == '#')
+	{
+		// Send to channel (if it exists)
+		if (channels.find(target) != channels.end())
+		{
+			Channel *chan = channels[target];
+			// Check if sender is in channel
+			if (!chan->getClients().count(client.getFd()))
+			{
+				sendToClient(client.getFd(), formatReply(ERR_CANNOTSENDTOCHAN, client.getNickname(), target + " :Cannot send to channel"));
+				return;
+			}
+			chan->sendMessageToClients(client.getFd(), formattedMsg);
+		}
+		else
+		{
+			sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), target + " :No such channel"));
+		}
+	}
+	else
+	{
+		// Private message to user
+		Client *targetClient = NULL;
+		for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); ++it)
+		{
+			if (it->second->getNickname() == target)
+			{
+				targetClient = it->second;
+				break;
+			}
+		}
+
+		if (!targetClient)
+		{
+			sendToClient(client.getFd(), formatReply(ERR_NOSUCHNICK, client.getNickname(), target + " :No such nick/channel"));
+			return;
+		}
+
+		sendToClient(targetClient->getFd(), formattedMsg);
+	}
 }
 
 void Command::sendWelcomeMessage(Client &client)
@@ -229,6 +357,11 @@ void Command::sendWelcomeMessage(Client &client)
 void Command::handleLeave(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	(void)clients;
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "LEAVE :Not enough parameters"));
+		return;
+	}
 	// leave channel
 	std::string channelName = args[1];
 	if (channels.find(channelName) == channels.end())
@@ -236,8 +369,146 @@ void Command::handleLeave(std::map<int, Client *> &clients, Client &client, std:
 		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
 		return;
 	}
-	channels[channelName]->removeClient(&client);
-	sendToClient(client.getFd(), ":ft_irc" + client.getNickname() + "!" + client.getUsername() + "@localhost PART:" + channelName + "\r\n");
+
+	Channel *chan = channels[channelName];
+	if (!chan->getClients().count(client.getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTONCHANNEL, client.getNickname(), channelName + " :You're not on that channel"));
+		return;
+	}
+
+	std::string partMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost PART " + channelName + "\r\n";
+	sendToClient(client.getFd(), partMsg);
+	chan->sendMessageToClients(client.getFd(), partMsg);
+	chan->removeClient(&client);
+}
+
+void Command::handlePart(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)clients;
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "PART :Not enough parameters"));
+		return;
+	}
+
+	std::string channelName = args[1];
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	Channel *chan = channels[channelName];
+	if (!chan->getClients().count(client.getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTONCHANNEL, client.getNickname(), channelName + " :You're not on that channel"));
+		return;
+	}
+
+	// Optional part message
+	std::string reason;
+	if (args.size() >= 3)
+	{
+		for (size_t i = 2; i < args.size(); ++i)
+		{
+			if (i > 2)
+				reason += " ";
+			reason += args[i];
+		}
+		if (!reason.empty() && reason[0] == ':')
+			reason = reason.substr(1);
+	}
+
+	std::string partMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost PART " + channelName;
+	if (!reason.empty())
+		partMsg += " :" + reason;
+	partMsg += "\r\n";
+
+	sendToClient(client.getFd(), partMsg);
+	chan->sendMessageToClients(client.getFd(), partMsg);
+	chan->removeClient(&client);
+}
+
+void Command::handleKick(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
+{
+	(void)clients;
+	// KICK #channel nickname :reason
+	if (args.size() < 3)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "KICK :Not enough parameters"));
+		return;
+	}
+
+	std::string channelName = args[1];
+	std::string targetNick = args[2];
+
+	if (channels.find(channelName) == channels.end())
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	Channel *chan = channels[channelName];
+
+	// Check if kicker is on channel
+	if (!chan->getClients().count(client.getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTONCHANNEL, client.getNickname(), channelName + " :You're not on that channel"));
+		return;
+	}
+
+	// Check if kicker is operator
+	if (!chan->isOperator(&client))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
+		return;
+	}
+
+	// Find target client in channel
+	Client *targetClient = NULL;
+	const std::map<int, Client *> &clientsInChan = chan->getClients();
+	for (std::map<int, Client *>::const_iterator it = clientsInChan.begin(); it != clientsInChan.end(); ++it)
+	{
+		if (it->second->getNickname() == targetNick)
+		{
+			targetClient = it->second;
+			break;
+		}
+	}
+
+	if (!targetClient)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_USERNOTINCHANNEL, client.getNickname(), targetNick + " " + channelName + " :They aren't on that channel"));
+		return;
+	}
+
+	// Build kick message with optional reason
+	std::string reason;
+	if (args.size() >= 4)
+	{
+		for (size_t i = 3; i < args.size(); ++i)
+		{
+			if (i > 3)
+				reason += " ";
+			reason += args[i];
+		}
+		if (!reason.empty() && reason[0] == ':')
+			reason = reason.substr(1);
+	}
+	else
+	{
+		reason = client.getNickname();
+	}
+
+	std::string kickMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost KICK " + channelName + " " + targetNick + " :" + reason + "\r\n";
+
+	// Send to all including the kicked user
+	sendToClient(targetClient->getFd(), kickMsg);
+	chan->sendMessageToClients(targetClient->getFd(), kickMsg);
+
+	// Remove from channel
+	chan->removeClient(targetClient);
 }
 
 void Command::handleMode(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
@@ -379,10 +650,46 @@ void Command::handleMode(std::map<int, Client *> &clients, Client &client, std::
 void Command::handleTopic(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)
 {
 	(void)clients;
+	if (args.size() < 2)
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NEEDMOREPARAMS, client.getNickname(), "TOPIC :Not enough parameters"));
+		return;
+	}
+
 	std::string channelName = args[1];
 	if (channels.find(channelName) == channels.end())
 	{
 		sendToClient(client.getFd(), formatReply(ERR_NOSUCHCHANNEL, client.getNickname(), channelName + " :No such channel"));
+		return;
+	}
+
+	Channel *chan = channels[channelName];
+
+	// Check if user is on channel
+	if (!chan->getClients().count(client.getFd()))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_NOTONCHANNEL, client.getNickname(), channelName + " :You're not on that channel"));
+		return;
+	}
+
+	// If no topic parameter, return current topic
+	if (args.size() == 2)
+	{
+		if (chan->getTopic().empty())
+		{
+			sendToClient(client.getFd(), ":ft_irc " RPL_NOTOPIC " " + client.getNickname() + " " + channelName + " :No topic is set\r\n");
+		}
+		else
+		{
+			sendToClient(client.getFd(), ":ft_irc " RPL_TOPIC " " + client.getNickname() + " " + channelName + " :" + chan->getTopic() + "\r\n");
+		}
+		return;
+	}
+
+	// Setting topic - check if operator
+	if (!chan->isOperator(&client))
+	{
+		sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
 		return;
 	}
 
@@ -394,24 +701,15 @@ void Command::handleTopic(std::map<int, Client *> &clients, Client &client, std:
 			topic += " ";
 		topic += args[i];
 	}
-	// add right to change topic if operator
-	const std::map<int, Client *> &operators = channels[channelName]->getOperators();
-	bool isOperator = false;
-	for (std::map<int, Client *>::const_iterator it = operators.begin(); it != operators.end(); ++it)
-	{
-		if (it->second == &client)
-		{
-			isOperator = true;
-			break;
-		}
-	}
+	if (!topic.empty() && topic[0] == ':')
+		topic = topic.substr(1);
 
-	if (!isOperator)
-	{
-		sendToClient(client.getFd(), formatReply(ERR_CHANOPRIVSNEEDED, client.getNickname(), channelName + " :You're not channel operator"));
-		return;
-	}
-	channels[channelName]->setTopic(topic);
+	chan->setTopic(topic);
+
+	// Broadcast topic change to all channel members
+	std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost TOPIC " + channelName + " :" + topic + "\r\n";
+	sendToClient(client.getFd(), topicMsg);
+	chan->sendMessageToClients(client.getFd(), topicMsg);
 }
 
 void Command::handleInvite(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args)

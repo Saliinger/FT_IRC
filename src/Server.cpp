@@ -33,8 +33,7 @@ Server Server::operator=(const Server &src)
 
 Server::~Server()
 {
-	// delete client / channel
-	// close all fd ( client / server )
+	shutdown();
 }
 
 // other constructor
@@ -119,9 +118,19 @@ void Server::handleClientMessage(int fd)
 		else
 			std::cerr << "recv() error on fd " << fd << std::endl;
 		close(fd);
+		delete _clients[fd];
 		_clients.erase(fd);
 		_temp_buffer.erase(fd);
-		return; // need to remove the fd from the poll list
+		// Remove from pollfds vector
+		for (std::vector<pollfd>::iterator it = _pollfds.begin(); it != _pollfds.end(); ++it)
+		{
+			if (it->fd == fd)
+			{
+				_pollfds.erase(it);
+				break;
+			}
+		}
+		return;
 	}
 
 	temp[bytes_read] = '\0';  // Null-terminate
@@ -150,4 +159,31 @@ void Server::handleClientMessage(int fd)
 std::string Server::getPass() const
 {
 	return _password;
+}
+void Server::shutdown()
+{
+	std::cout << "Cleaning up resources..." << std::endl;
+
+	// Close all client connections
+	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		close(it->first);
+		delete it->second;
+	}
+	_clients.clear();
+
+	// Delete all channels
+	for (std::map<std::string, Channel *>::iterator it = _channels.begin(); it != _channels.end(); ++it)
+	{
+		delete it->second;
+	}
+	_channels.clear();
+
+	// Close server socket
+	if (_server_fd >= 0)
+	{
+		close(_server_fd);
+	}
+
+	std::cout << "Server shutdown complete" << std::endl;
 }

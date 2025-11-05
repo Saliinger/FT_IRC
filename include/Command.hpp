@@ -36,17 +36,19 @@ private:
 
 	// helper
 	void handlePass(Client &client, const std::vector<std::string> &args, const std::string pass);
-	void handleNick(Client &client, const std::vector<std::string> &args);
+	void handleNick(std::map<int, Client *> &clients, Client &client, const std::vector<std::string> &args);
 	void handleUser(Client &client, const std::vector<std::string> &args);
 	void handleJoin(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handlePrivmsg(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleLeave(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handlePart(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
+	void handleKick(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleMode(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleTopic(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 	void handleQuit(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args);
 
 	void handleInvite(std::map<int, Client *> &clients, Client &client, std::map<std::string, Channel *> &channels, const std::vector<std::string> &args); // un auth command
-	void handleUnauthenticatedCommand(Client &client, const std::string &cmd, const std::vector<std::string> &tokens,
+	void handleUnauthenticatedCommand(std::map<int, Client *> &clients, Client &client, const std::string &cmd, const std::vector<std::string> &tokens,
 									  const std::string &pass);
 
 	// check user completion
